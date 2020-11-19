@@ -1,3 +1,6 @@
+const math = require('remark-math')
+const katex = require('rehype-katex')
+
 module.exports = {
   title: 'carefree-learn',
   url: 'https://carefree0910.me/carefree-learn-doc/',
@@ -7,6 +10,9 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'carefree0910', // Usually your GitHub org/user name.
   projectName: 'carefree-learn', // Usually your repo name.
+  stylesheets: [
+    'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css',
+  ],
   themeConfig: {
     navbar: {
       title: 'carefree-learn',
@@ -40,8 +46,8 @@ module.exports = {
               to: 'docs/introduction',
             },
             {
-              label: 'Configurations',
-              to: 'docs/user-guide/configurations',
+              label: 'Design Principles',
+              to: 'docs/design-princilples',
             },
           ],
         },
@@ -80,6 +86,9 @@ module.exports = {
           // Please change this to your repo.
           // editUrl:
           //   'https://github.com/facebook/docusaurus/edit/master/website/',
+          showLastUpdateTime: true,
+          remarkPlugins: [math],
+          rehypePlugins: [katex],
         },
         blog: {
           showReadingTime: true,

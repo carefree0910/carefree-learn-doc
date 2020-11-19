@@ -1,16 +1,16 @@
 ---
 id: configurations
 title: Configurations
-sidebar_label: Configurations
 ---
 
 Although it is possible to get a rather good performance with default configurations, performance might be gained easily by specifying configurations with our prior knowledges.
 
 We've mentioned the basic ideas on how to configure `carefree-learn` in [`Introduction`](../introduction.md#configurations), so we will focus on introducing how to actually do it in this page. 
 
-!!! info
-    + Notice that configurations listed in this page are algorithm-agnostic.
-    + For reference on concepts repeated across the configurations, see [`Terminologies`](../introduction.md#terminologies).
+:::info
++ Notice that configurations listed in this page are algorithm-agnostic.
++ For reference on concepts repeated across the configurations, see [`Terminologies`](../introduction.md#terminologies).
+:::
 
 
 ## Design Tenets

@@ -1,10 +1,8 @@
 ---
 id: introduction
 title: Introduction
-sidebar_label: Introduction
 slug: /
 ---
-
 
 ## Advantages
 
@@ -23,152 +21,57 @@ Like many similar projects, `carefree-learn` can be treated as a high-level libr
 + `carefree-learn` supports easy-to-use saving and loading. By default, everything will be wrapped into a zip file!
 + `carefree-learn` supports [`Distributed Training`](introduction.md#distributed-training).
 
-!!! info
-    From the discriptions above, you might notice that `carefree-learn` is more of a minimal **Automatic Machine Learning** (AutoML) solution than a pure Machine Learning package.
+:::info
+From the discriptions above, you might notice that `carefree-learn` is more of a minimal **Automatic Machine Learning** (AutoML) solution than a pure Machine Learning package.
+:::
 
-!!! tip
-    When we say **ANY**, it means that `carefree-learn` can even train on dataset with only one single sample:
-    
-    ```python
-    import cflearn
-    
-    toy = cflearn.make_toy_model()
-    data = toy.tr_data.converted
-    print(f"x={data.x}, y={data.y}")  # x=[[0.]], y=[[1.]]
-    ```
-
-    This is especially useful when we need to do unittests or to verify whether our custom modules (e.g. custom pre-processes) are correctly integrated into `carefree-learn`, for example:
-
-    ```python
-    import cflearn
-    import numpy as np
-
-    # here we implement a custom processor
-    @cflearn.register_processor("plus_one")
-    class PlusOne(cflearn.Processor):
-        @property
-        def input_dim(self) -> int:
-            return 1
-
-        @property
-        def output_dim(self) -> int:
-            return 1
-
-        def fit(self,
-                columns: np.ndarray) -> cflearn.Processor:
-            return self
-
-        def _process(self,
-                    columns: np.ndarray) -> np.ndarray:
-            return columns + 1
-
-        def _recover(self,
-                    processed_columns: np.ndarray) -> np.ndarray:
-            return processed_columns - 1
-
-    # we need to specify that we use the custom process method to process our labels
-    config = {"data_config": {"label_process_method": "plus_one"}}
-    toy = cflearn.make_toy_model(config)
-    y = toy.tr_data.converted.y
-    processed_y = toy.tr_data.processed.y
-    print(f"y={y}, new_y={processed_y}")  # y=[[1.]], new_y=[[2.]]
-    ```
-
-There is one more thing we'd like to mention: `carefree-learn` is '[Pandas](https://pandas.pydata.org/)-free'. The reasons why we excluded [Pandas](https://pandas.pydata.org/) are listed in [`carefree-data`](https://github.com/carefree0910/carefree-data).
-
-
-## Design Tenets
-
-`carefree-learn` was designed to support most commonly used methods with 'carefree' APIs. Moreover, `carefree-learn` was also designed with interface which is general enough, so that more sophisticated functionality can also be easily integrated in the future. This brings a tension in how to create abstractions in code, which is a challenge for us:
-
-+ On the one hand, it requires a reasonably high-level abstraction so that users can easily work around with it in a standard way, without having to worry too much about the details.
-+ On the other hand, it also needs to have a very thin abstraction to allow users to do (many) other things in new ways. Breaking existing abstractions and replacing them with new ones should be fairly easy.
-
-In `carefree-learn`, there are three main design tenets that address this tension together:
-
-+ Share configurations with one single `config` argument (see [`Configurations`](introduction.md#configurations)).
-+ Build some common blocks which shall be leveraged across different models (see [`Common Blocks`](introduction.md#common-structure)).
-+ Divide `carefree-learn` into three parts: [`Model`](introduction.md#model), [`Trainer`](introduction.md#trainer) and [`Pipeline`](introduction.md#pipeline), each focuses on certain roles.
-+ Implemente functions (`cflearn.register_*` to be exact) to ensure flexibility and control on different modules and stuffs (see [`Registration`](introduction.md#registration)).
-
-We will introduce the details in the following subsections.
-
-### Common Blocks
-
-!!! info
-    + Source codes path: [blocks.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/modules/blocks.py).
-
-Commonality is important for abstractions. When it comes to deep learning, it is not difficult to figure out the very common structure across all models: the `Mapping` Layers which is responsible for mapping data distrubution from one dimensional to another.
-
-Although some efforts have been made to replace the `Mapping` Layers (e.g. DNDF[^1]), it is undeniable that the `Mapping` Layers should be extracted as a stand-alone module before any other structures. But in `carefree-learn`, we should do more than that.
-
-Recall that `carefree-learn` focuses on tabular datasets, which means `carefree-learn` will use `Mapping` Layers in most cases (Unlike CNN or RNN which has Convolutional Blocks and RNNCell Blocks respectively). In this case, it is necessary to wrap multiple `Mapping`s into one single Module - also well known as `MLP` - in `carefree-learn`. So, in CNN we have `Conv2D`, in RNN we have `LSTM`, and in `carefree-learn` we have `MLP`.
-
-### Model
-
-!!! info
-    + Source codes path: [base.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/models/base.py) -> `class ModelBase`.
-
-In `carefree-learn`, a `Model` should implement the core algorithms.
-
-+ It assumes that the input data in training process is already 'batched, processed, nice and clean', but not yet 'encoded'.
-    + Fortunately, `carefree-learn` pre-defined some useful methods which can encode categorical columns easily.
-+ It does not care about how to train a model, it only focuses on how to make predictions with input, and how to calculate losses with them.
-
-!!! note
-    `Model`s are likely to define `MLP` blocks frequently, as explained in the [`Common Blocks`](introduction.md#common-blocks) section.
-
-### Trainer
-
-!!! info
-    + Source codes path: [core.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/trainer/core.py) -> `class Trainer`.
-
-In `carefree-learn`, a `Trainer` should implement the high-level parts, as listed below:
-
-+ It assumes that the input data is already 'processed, nice and clean', but it should take care of getting input data into batches, because in real applications batching is essential for performance.
-+ It should take care of the training loop, which includes updating parameters with an optimizer, verbosing metrics, checkpointing, early stopping, logging, etc.
-
-### Pipeline
-
-!!! info
-    + Source codes path: [core.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/pipeline/core.py) -> `class Pipeline`.
-
-In `carefree-learn`, a `Pipeline` should implement the preparation and API part.
-
-+ It should not make any assumptions to the input data, it could already be 'nice and clean', but it could also be 'dirty and messy'. Therefore, it needs to transform the original data into 'nice and clean' data and then feed it to `Trainer`. The data transformations include (this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data), though):
-    + Imputation of missing values.
-    + Transforming string columns into categorical columns.
-    + Processing numerical columns.
-    + Processing label column (if needed).
-+ It should implement some algorithm-agnostic functions (e.g. `predict`, `save`, `load`, etc.).
-
-### Registration
-
-Registration in `carefree-learn` means registering user-defined modules to `carefree-learn`, so `carefree-learn` can leverage these modules to resolve more specific tasks. In most cases, the registration stuffs are done by simply defining and updating many global `:::python dict`s.
-
-For example, `carefree-learn` defined some useful parameter initializations in `cflearn.misc.toolkit.Initializer`. If we want to use our own initialization methods, simply register it and then everything will be fine:
+:::tip
+When we say **ANY**, it means that `carefree-learn` can even train on dataset with only one single sample:
 
 ```python
-import torch
 import cflearn
 
-from torch.nn import Parameter
-
-initializer = cflearn.Initializer({})
-
-@cflearn.register_initializer("all_one")
-def all_one(initializer_, parameter):
-    parameter.fill_(1.)
-
-param = Parameter(torch.zeros(3))
-with torch.no_grad():
-    initializer.initialize(param, "all_one")
-print(param)  # tensor([1., 1., 1.], requires_grad=True)
+toy = cflearn.make_toy_model()
+data = toy.tr_data.converted
+print(f"x={data.x}, y={data.y}")  # x=[[0.]], y=[[1.]]
 ```
 
-!!! info
-    Currently we mainly have 5 registrations in use: `register_metric`, `register_optimizer`, `register_scheduler`, `register_initializer` and `register_processor`
+This is especially useful when we need to do unittests or to verify whether our custom modules (e.g. custom pre-processes) are correctly integrated into `carefree-learn`, for example:
 
+```python
+import cflearn
+import numpy as np
+
+# here we implement a custom processor
+@cflearn.register_processor("plus_one")
+class PlusOne(cflearn.Processor):
+    @property
+    def input_dim(self) -> int:
+        return 1
+
+    @property
+    def output_dim(self) -> int:
+        return 1
+
+    def fit(self, columns: np.ndarray) -> cflearn.Processor:
+        return self
+
+    def _process(self, columns: np.ndarray) -> np.ndarray:
+        return columns + 1
+
+    def _recover(self, processed_columns: np.ndarray) -> np.ndarray:
+        return processed_columns - 1
+
+# we need to specify that we use the custom process method to process our labels
+config = {"data_config": {"label_process_method": "plus_one"}}
+toy = cflearn.make_toy_model(config=config)
+y = toy.tr_data.converted.y
+processed_y = toy.tr_data.processed.y
+print(f"y={y}, new_y={processed_y}")  # y=[[1.]], new_y=[[2.]]
+```
+:::
+
+There is one more thing we'd like to mention: `carefree-learn` is '[Pandas](https://pandas.pydata.org/)-free'. The reasons why we excluded [Pandas](https://pandas.pydata.org/) are listed in [`carefree-data`](https://github.com/carefree0910/carefree-data).
 
 ## Configurations
 
@@ -178,8 +81,9 @@ In `carefree-learn`, we have few args and kwargs in each module. Instead, we'll 
 
 Since we have many stand-alone modules that provide corresponding functionalities, our configuration (which is a Python dict) will be designed 'hierarchically', and each module can read its specified configuration under its specific 'scope'. If needed, they can also access configurations defined under other 'scopes' easily because the whole configuration dict will be passed to each module.
 
-!!! info
-    Currently we mainly have 6 scopes in use: `root` (`pipeline_config`), `model_config`, `trainer_config`, `data_config`, `metric_config` and `optimizers`.
+:::info
+Currently we mainly have 6 scopes in use: `root` (`pipeline_config`), `model_config`, `trainer_config`, `data_config`, `metric_config` and `optimizers`.
+:::
 
 Suppose we have a Python dict named `config` now:
 
@@ -252,22 +156,25 @@ A **`config`** indicates the main part (or, the shared part) of the configuratio
 
 An **`increment_config`** indicates the configurations that you want to update on **`config`**.
 
-!!! info
-    This is very useful when you only want to tune a single configuration and yet you have tons of other configurations need to be fixed. In this case, you can set other configurations as **`config`**, and adjust the target configuration in **`increment_config`**.
+:::info
+This is very useful when you only want to tune a single configuration and yet you have tons of other configurations need to be fixed. In this case, you can set other configurations as 
+:::**`config`**, and adjust the target configuration in **`increment_config`**.
 
 ### forward
 
 A **`forward`** method is a common method required by (almost) all PyTorch modules.
 
-!!! info
-    [Here](https://discuss.pytorch.org/t/about-the-nn-module-forward/20858) is a nice discussion.
+:::info
+[Here](https://discuss.pytorch.org/t/about-the-nn-module-forward/20858) is a nice discussion.
+:::
 
 ### task_type
 
 We use `:::python task_type = "clf"` to indicate a classification task, and `:::python task_type = "reg"` to indicate a regression task.
 
-!!! info
-    And we'll convert them into [`:::python cfdata.tabular.TaskTypes`](https://github.com/carefree0910/carefree-data/blob/770de34ed2e49ed81fa00be629d61f5b05233a9b/cfdata/tabular/types.py#L91) under the hood.
+:::info
+And we'll convert them into [`:::python cfdata.tabular.TaskTypes`](https://github.com/carefree0910/carefree-data/blob/770de34ed2e49ed81fa00be629d61f5b05233a9b/cfdata/tabular/types.
+:::py#L91) under the hood.
 
 ### tr, cv & te
 
