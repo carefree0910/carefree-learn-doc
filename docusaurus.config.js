@@ -16,10 +16,10 @@ module.exports = {
   themeConfig: {
     navbar: {
       title: 'carefree-learn',
-      logo: {
-        alt: 'carefree-learn',
-        src: 'img/logo.svg',
-      },
+      // logo: {
+      //   alt: 'carefree-learn',
+      //   src: 'img/logo.svg',
+      // },
       items: [
         {
           to: 'docs/',
@@ -42,12 +42,16 @@ module.exports = {
           title: 'Docs',
           items: [
             {
+              label: 'Installation',
+              to: 'docs/getting-started/installation/',
+            },
+            {
               label: 'Introduction',
-              to: 'docs/introduction',
+              to: 'docs/',
             },
             {
               label: 'Design Principles',
-              to: 'docs/design-princilples',
+              to: 'docs/design-principles/',
             },
           ],
         },

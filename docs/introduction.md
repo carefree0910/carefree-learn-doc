@@ -109,7 +109,7 @@ config = {
 }
 ```
 
-We will introduce what kinds of algorithm-agnostic configurations are available in each scope and how to specify them in the [`Configurations`](user-guide/configurations.md) section.
+We will introduce what kinds of algorithm-agnostic configurations are available in each scope and how to specify them in the [`Configurations`](getting-started/configurations) section.
 
 
 ## Data Loading Strategy

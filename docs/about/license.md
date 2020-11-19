@@ -1,7 +1,6 @@
 ---
 id: license
 title: License
-sidebar_label: License
 ---
 
 ## carefree-learn License (MIT)
