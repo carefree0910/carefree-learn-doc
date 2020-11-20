@@ -3,13 +3,13 @@ const katex = require('rehype-katex')
 
 module.exports = {
   title: 'carefree-learn',
-  url: 'https://carefree0910.me/carefree-learn-doc/',
-  baseUrl: '/',
+  url: 'https://carefree0910.me',
+  baseUrl: '/carefree-learn-doc/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
   organizationName: 'carefree0910', // Usually your GitHub org/user name.
-  projectName: 'carefree-learn', // Usually your repo name.
+  projectName: 'carefree-learn-doc', // Usually your repo name.
   stylesheets: [
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css',
   ],
