@@ -106,48 +106,48 @@ In order to manage default configurations, `carefree-learn` introduced `Elements
 
 ### Elements
 
-The construction of `Elements` itself is quite dummy (with almost all the fields filled with `None` by default), and the logics are organized in `Elements.make` instead. Therefore, in this section, the `default` values are ones assigned in `Elements.make`.
+Since some fields in `Elements` need to be inferenced with other information, their `default` values are ones assigned in `Elements.make`.
 
 ```python
 class Elements(NamedTuple):
     model: str = "fcnn"
-    use_amp: Optional[bool] = None
-    use_simplify_data: Optional[bool] = None
-    delim: Optional[str] = None
     task_type: Optional[task_type_type] = None
+    use_simplify_data: bool = False
+    data_config: Optional[Dict[str, Any]] = None
+    delim: Optional[str] = None
     has_column_names: Optional[bool] = None
+    read_config: Optional[Dict[str, Any]] = None
+    batch_size: int = 128
     cv_split: Optional[Union[float, int]] = None
+    logging_folder: Optional[str] = None
+    logging_file: Optional[str] = None
+    use_amp: bool = False
     min_epoch: Optional[int] = None
     num_epoch: Optional[int] = None
     max_epoch: Optional[int] = None
     fixed_epoch: Optional[int] = None
-    batch_size: Optional[int] = None
-    max_snapshot_file: Optional[int] = None
-    clip_norm: Optional[float] = None
-    ema_decay: Optional[float] = None
+    max_snapshot_file: int = 5
+    clip_norm: float = 0.0
+    ema_decay: float = 0.0
     ts_config: Optional[TimeSeriesConfig] = None
     aggregation: Optional[str] = None
     aggregation_config: Optional[Dict[str, Any]] = None
     ts_label_collator_config: Optional[Dict[str, Any]] = None
-    data_config: Optional[Dict[str, Any]] = None
-    read_config: Optional[Dict[str, Any]] = None
     model_config: Optional[Dict[str, Any]] = None
-    metrics: Optional[Union[str, List[str]]] = None
+    metrics: Union[str, List[str]] = "auto"
     metric_config: Optional[Dict[str, Any]] = None
     optimizer: Optional[str] = None
     scheduler: Optional[str] = None
     optimizer_config: Optional[Dict[str, Any]] = None
     scheduler_config: Optional[Dict[str, Any]] = None
     optimizers: Optional[Dict[str, Any]] = None
-    logging_file: Optional[str] = None
-    logging_folder: Optional[str] = None
-    trigger_logging: Optional[bool] = None
+    trigger_logging: bool = False
     trial: Optional[Trial] = None
     tracker_config: Optional[Dict[str, Any]] = None
     cuda: Optional[Union[int, str]] = None
-    verbose_level: Optional[int] = None
-    use_timing_context: Optional[bool] = None
-    use_tqdm: Optional[bool] = None
+    verbose_level: int = 2
+    use_timing_context: bool = True
+    use_tqdm: bool = True
     extra_config: Optional[Dict[str, Any]] = None
 ```
 
@@ -156,27 +156,39 @@ class Elements(NamedTuple):
     + Currently `carefree-learn` supports:
         + `"linear"`, `"fcnn"`, `"wnd"`, `"nnb"`, `"ndt"`, `"tree_linear"`, `"tree_stack"`, `"tree_dnn"` and `"ddr"` for basic usages.
         + `"rnn"` and `"transformer"` for time series usages.
-+ **`use_amp`** [default = `False`]
-    + Specify whether use the [`amp`](https://pytorch.org/docs/stable/amp.html) technique or not.
++ **`task_type`** [default = `None`]
+    + Specify the task type.
+        + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
 + **`use_simplify_data`** [default = `False`]
     + Specify whether use a simplified `TabularData` (without any pre-processing).
++ **`data_config`** [default = `{}`]
+    + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
 + **`delim`** [default = `None`]
     + Specify the delimiter of the dataset file.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
     + Only take effects when we are using file datasets.
-+ **`task_type`** [default = `None`]
-    + Specify the task type.
-        + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
 + **`has_column_names`** [default = `None`]
     + Specify whether the elements of the first row are column names.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
     + Only take effects when we are using file datasets.
++ **`read_config`** [default = `{}`]
+    + kwargs used in [`cfdata.tabular.TabularData.read`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L769).
++ **`batch_size`** [default = `128`]
+    + Specify the number of samples in each batch.
 + **`cv_split`** [default = `None`]
     + Specify the split of the cross validation dataset.
         + If `cv_split < 1`, it will be the 'ratio' comparing to the whole dataset.
         + If `cv_split > 1`, it will be the exact 'size'.
         + If `cv_split == 1`, `cv_split == "ratio" if isinstance(cv_split, float) else "size"`
     + If not provided, `carefree-learn` will try to inference it with `min_cv_split`, `max_cv_split` and `max_cv_split_ratio`. See [cv_split](#cv_split) for more details.
++ **`logging_folder`** [default = `None`]
+    + Specify the logging folder.
+    + If not provided, `carefree-learn` will try to inference it automatically.
++ **`logging_file`** [default = `None`]
+    + Specify the logging file.
+    + If not provided, `carefree-learn` will try to inference it automatically.
++ **`use_amp`** [default = `False`]
+    + Specify whether use the [`amp`](https://pytorch.org/docs/stable/amp.html) technique or not.
 + **`min_epoch`** [default = `0`]
     + Specify the minimum number of epoch.
 + **`num_epoch`** [default = `40`]
@@ -187,9 +199,7 @@ class Elements(NamedTuple):
 + **`fixed_epoch`** [default = `None`]
     + Specify the (fixed) number of epoch.
     + If sepcified, then `min_epoch`, `num_epoch` and `max_epoch` will all be set to it.
-+ **`batch_size`** [default = `128`]
-    + Specify the number of samples in each batch.
-+ **`max_snapshot_file`** [default = `None`]
++ **`max_snapshot_file`** [default = `5`]
     + Specify the maximum number of checkpoint files we could save during training.
 + **`clip_norm`** [default = `0.0`]
     + Given a gradient `g`, and the **`clip_norm`** value, we will normalize `g` so that its L2-norm is less than or equal to **`clip_norm`**.
@@ -205,10 +215,6 @@ class Elements(NamedTuple):
     + Specify the configuration of aggregation used in time series tasks (experimental).
 + **`ts_label_collator_config`** [default = `None`]
     + Specify the configuration of the label collator used in time series tasks (experimental).
-+ **`data_config`** [default = `{}`]
-    + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
-+ **`read_config`** [default = `{}`]
-    + kwargs used in [`cfdata.tabular.TabularData.read`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L769).
 + **`model_config`** [default = `{}`]
     + Configurations used in [`Model`](../design-principles#model).
 + **`metrics`** [default = `"auto"`]
@@ -225,12 +231,6 @@ class Elements(NamedTuple):
     + Specify scheduler's configuration.
 + **`optimizers`** [default = `{}`]
     + Specify the fine grained configurations of optimizers and schedulers. See [`optimizers`](#optimizers) for more details.
-+ **`logging_file`** [default = `None`]
-    + Specify the logging file.
-    + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`logging_folder`** [default = `None`]
-    + Specify the logging folder.
-    + If not provided, `carefree-learn` will try to inference it automatically.
 + **`trigger_logging`** [default = `False`]
     + Whether log messages into a log file.
 + **`trial`** [default = `None`]
