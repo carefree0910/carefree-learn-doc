@@ -100,7 +100,7 @@ An `FCNN` model is simply a **F**ully **C**onnected **N**eural **N**etwork, and 
 </TabItem>
 <TabItem value="wnd">
 
-A `Wide & Deep` model generally splits the inputs into two parts, then feed them to a *wide* model and a *deep* model respectively. Concretely, a *wide* model takes in categorical features with `one_hot` encoding, while a *deep* model takes in numerical features and categorical features with `embedding` encoding. Its representation will be a little more complicated because it requires 2 `pipe`s:
+A `Wide & Deep` model basically splits the inputs into two parts, then feed them to a *wide* model and a *deep* model respectively. Concretely, a *wide* model takes in categorical features with `one_hot` encoding, while a *deep* model takes in numerical features and categorical features with `embedding` encoding. Its representation will be a little more complicated because it requires 2 `pipe`s:
 
 :::note pipe wide
 1. `transform` would be a `one_hot_only` transform.
@@ -141,7 +141,7 @@ A `Transformer` model represents the encoder part of the Transformer model which
 
 ### `transform`
 
-In `carefree-learn`, a `transform` refers to *encodings* that handle categorical features. Although there are plenty of encoding methods, we decide to stick to `one_hot` encoding and `embedding` encoding only because their performances are already promising enough. Besides, flexibility often means reductions in performance, so sticking to `one_hot` & `embedding` means we can perform better optimizations on them (see [`Optimizations`](optimizations) for more details).
+In `carefree-learn`, a `transform` refers to *encodings* that handle categorical features. Although there are plenty of encoding methods, we decide to stick to `one_hot` encoding and `embedding` encoding because their performances are already promising enough. Besides, flexibility often means reductions in performance, so sticking to `one_hot` & `embedding` means we can perform better optimizations on them (see [`Optimizations`](optimizations) for more details).
 
 In this case, `carefree-learn` pre-defined 7 types of `transform`, namely:
 + `default`: use numerical features, `one_hot` & `embedding`.
