@@ -14,6 +14,9 @@ module.exports = {
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css',
   ],
   themeConfig: {
+    prism: {
+      theme: require('prism-react-renderer/themes/github'),
+    },
     navbar: {
       title: 'carefree-learn',
       // logo: {
@@ -46,8 +49,8 @@ module.exports = {
               to: 'docs/getting-started/installation/',
             },
             {
-              label: 'Introduction',
-              to: 'docs/',
+              label: 'Quick Start',
+              to: 'docs/getting-started/quick-start',
             },
             {
               label: 'Design Principles',

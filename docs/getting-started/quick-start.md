@@ -6,13 +6,15 @@ title: Quick Start
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
+In `carefree-learn`, it's both easy to train and serialize a model:
+
 ## Training
 
 <Tabs
   defaultValue="numpy"
   values={[
-    {label: 'NumPy', value: 'numpy'},
-    {label: 'File', value: 'file'},
+    {label: 'With NumPy', value: 'numpy'},
+    {label: 'With File', value: 'file'},
   ]
 }>
 <TabItem value="numpy">
@@ -46,7 +48,7 @@ Then you will see something like this:
 </TabItem>
 <TabItem value="file">
 
-`carefree-learn` can also easily fit / predict / estimate directly on files (file-in, file-out). Suppose we have an 'xor.txt' file with following contents:
+`carefree-learn` can also easily fit / predict / estimate directly on files (**file-in, file-out**). Suppose we have an `xor.txt` file with following contents:
 
 ```text
 0,0,0
@@ -57,7 +59,7 @@ Then you will see something like this:
 
 Then `carefree-learn` can be utilized with only few lines of code:
 
-> `delim` refers to 'delimiter', and `has_column_names` refers to whether the file has column names (has header) or not.
+> `delim` refers to 'delimiter', and `has_column_names` refers to whether the file has column names (or, header) or not.
 > 
 > Please refer to [carefree-data](https://github.com/carefree0910/carefree-data/blob/dev/README.md) if you're interested in more details.
 
