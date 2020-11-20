@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[19],{88:function(a){a.exports=JSON.parse('{"allTagsPath":"/carefree-learn-doc/blog/tags","slug":"docusaurus","name":"docusaurus","count":3,"permalink":"/carefree-learn-doc/blog/tags/docusaurus"}')}}]);
