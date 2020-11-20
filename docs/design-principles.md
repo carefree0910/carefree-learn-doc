@@ -6,7 +6,7 @@ title: Design Principles
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-`carefree-learn` was designed to support most commonly used methods with 'carefree' APIs. Moreover, `carefree-learn` was also designed with interface which is general enough, so that more sophisticated functionality can also be easily integrated in the future. This brings a tension in how to create abstractions in code, which is a challenge for us:
+`carefree-learn` was designed to support most commonly used methods with *carefree* APIs. Moreover, `carefree-learn` was also designed with interface which is general enough, so that more sophisticated functionality can also be easily integrated in the future. This brings a tension in how to create abstractions in code, which is a challenge for us:
 
 + On the one hand, it requires a reasonably high-level abstraction so that users can easily work around with it in a standard way, without having to worry too much about the details.
 + On the other hand, it also needs to have a very thin abstraction to allow users to do (many) other things in new ways. Breaking existing abstractions and replacing them with new ones should be fairly easy.
@@ -37,7 +37,7 @@ Recall that `carefree-learn` focuses on tabular datasets, which means `carefree-
 
 In `carefree-learn`, a `Model` should implement the core algorithms.
 
-+ It assumes that the input data in training process is already 'batched, processed, nice and clean', but not yet 'encoded'.
++ It assumes that the input data in training process is already *batched, processed, nice and clean*, but not yet *encoded*.
     + Fortunately, `carefree-learn` pre-defined some useful methods which can encode categorical columns easily and **EFFICIENTLY** (see [`Optimizations`](optimizations) for more details)
 + It does not care about how to train a model, it only focuses on how to make predictions with input, and how to calculate losses with them.
 
@@ -49,7 +49,7 @@ One thing we would like to proudly announce is that `carefree-learn` has made an
 
 ### `pipe`
 
-Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the 'inputs' and the 'connections' of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those 'branches' which takes in all / part of the inputs, apply some `transform`s, `extract` some features, and then feed the final network (`head`) with these features. Here's an example:
+Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`s, `extract` some features, and then feed the final network (`head`) with these features. Here's an example:
 
 ![Pipe](../static/img/pipe.png)
 
@@ -141,7 +141,7 @@ A `Transformer` model represents the encoder part of the Transformer model which
 
 ### `transform`
 
-In `carefree-learn`, a `transform` refers to 'encodings' that handle categorical features. Although there are plenty of encoding methods, we decide to stick to `one_hot` encoding and `embedding` encoding only because their performances are already promising enough. Besides, flexibility often means reductions in performance, so sticking to `one_hot` & `embedding` means we can perform better optimizations on them (see [`Optimizations`](optimizations) for more details).
+In `carefree-learn`, a `transform` refers to *encodings* that handle categorical features. Although there are plenty of encoding methods, we decide to stick to `one_hot` encoding and `embedding` encoding only because their performances are already promising enough. Besides, flexibility often means reductions in performance, so sticking to `one_hot` & `embedding` means we can perform better optimizations on them (see [`Optimizations`](optimizations) for more details).
 
 In this case, `carefree-learn` pre-defined 7 types of `transform`, namely:
 + `default`: use numerical features, `one_hot` & `embedding`.
@@ -236,7 +236,7 @@ For detailed development guides, please refer to [Build Your Own Models](develop
 
 In `carefree-learn`, a `Trainer` should implement the training parts, as listed below:
 
-+ It assumes that the input data is already 'processed, nice and clean', but it should take care of getting input data into batches, because in real applications batching is essential for performance.
++ It assumes that the input data is already *processed, nice and clean*, but it should take care of getting input data into batches, because in real applications batching is essential for performance.
 + It should take care of the training loop, which includes updating parameters with an optimizer, verbosing metrics, checkpointing, early stopping, logging, etc.
 
 ## Pipeline
@@ -245,7 +245,7 @@ In `carefree-learn`, a `Trainer` should implement the training parts, as listed 
 
 In `carefree-learn`, a `Pipeline` should implement the high-level parts.
 
-+ It should not make any assumptions to the input data, it could already be 'nice and clean', but it could also be 'dirty and messy'. Therefore, it needs to transform the original data into 'nice and clean' data and then feed it to `Trainer`. The data transformations include (this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data), though):
++ It should not make any assumptions to the input data, it could already be *nice and clean*, but it could also be *dirty and messy*. Therefore, it needs to transform the original data into *nice and clean* data and then feed it to `Trainer`. The data transformations include (this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data), though):
     + Imputation of missing values.
     + Transforming string columns into categorical columns.
     + Processing numerical columns.
