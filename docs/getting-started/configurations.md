@@ -115,7 +115,7 @@ class Elements(NamedTuple):
     use_simplify_data: Optional[bool] = None
     delim: Optional[str] = None
     task_type: Optional[task_type_type] = None
-    skip_first: Optional[bool] = None
+    has_column_names: Optional[bool] = None
     cv_split: Optional[Union[float, int]] = None
     min_epoch: Optional[int] = None
     num_epoch: Optional[int] = None
@@ -167,8 +167,8 @@ class Elements(NamedTuple):
 + **`task_type`** [default = `None`]
     + Specify the task type.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
-+ **`skip_first`** [default = `None`]
-    + Specify whether the first row of the dataset file should be skipped.
++ **`has_column_names`** [default = `None`]
+    + Specify whether the elements of the first row are column names.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
     + Only take effects when we are using file datasets.
 + **`cv_split`** [default = `None`]
