@@ -275,7 +275,7 @@ print(param)  # tensor([1., 1., 1.], requires_grad=True)
 ```
 
 :::info
-Currently we mainly have 5 registrations in use: `register_metric`, `register_optimizer`, `register_scheduler`, `register_initializer` and `register_processor`
+Currently we mainly have 9 registrations in use: `register_pipe`, `register_head`, `register_extractor`, `register_model`, `register_config`, `register_head_config`, `register_metric`, `register_initializer` and `register_processor`
 :::
 
 

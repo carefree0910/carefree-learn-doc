@@ -336,10 +336,10 @@ If we need to apply different optimizers on different parameters (which is quite
 Here's an example:
 
 ```python
-from cflearn.models.base import ModelBase
+import cflearn
 
-@ModelBase.register("foo")
-class Foo(ModelBase):
+@cflearn.register_model("foo")
+class Foo(cflearn.ModelBase):
     @property
     def params1(self):
         return [self.p1, self.p2, ...]
