@@ -252,7 +252,7 @@ class Elements(NamedTuple):
 
 ### make
 
-In order to provide out of the box tools, `carefree-learn` implements high level APIs for training, estimating, distributed, HPO, etc. In this section we'll introduce `cflearn.make` because other APIs depend on it more or less.
+In order to provide out of the box tools, `carefree-learn` implements high level APIs for training, evaluating, distributed, HPO, etc. In this section we'll introduce `cflearn.make` because other APIs depend on it more or less.
 
 ```python
 def make(model: str = "fcnn", **kwargs: Any) -> Pipeline:

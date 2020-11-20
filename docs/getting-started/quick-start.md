@@ -29,8 +29,8 @@ m = cflearn.make().fit(x, y)
 m.predict(x)
 # Make probability predictions
 m.predict_prob(x)
-# Estimate performance
-cflearn.estimate(x, y, pipelines=m)
+# Evaluate performance
+cflearn.evaluate(x, y, pipelines=m)
 ```
 
 Then you will see something like this:
@@ -48,7 +48,7 @@ Then you will see something like this:
 </TabItem>
 <TabItem value="file">
 
-`carefree-learn` can also easily fit / predict / estimate directly on files (**file-in, file-out**). Suppose we have an `xor.txt` file with following contents:
+`carefree-learn` can also easily fit / predict / evaluate directly on files (**file-in, file-out**). Suppose we have an `xor.txt` file with following contents:
 
 ```text
 0,0,0
@@ -67,7 +67,7 @@ Then `carefree-learn` can be utilized with only few lines of code:
 import cflearn
 m = cflearn.make(delim=",", has_column_names=False).fit("xor.txt", x_cv="xor.txt")
 # `contains_labels` is set to True because we're evaluating on training set
-cflearn.estimate("xor.txt", pipelines=m, contains_labels=True)
+cflearn.evaluate("xor.txt", pipelines=m, contains_labels=True)
 ```
 
 After which you will see something like this:

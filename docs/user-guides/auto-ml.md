@@ -5,8 +5,6 @@ title: AutoML
 
 `carefree-learn` provides `cflearn.Auto` API for out-of-the-box usages.
 
-### TL; DR
-
 ```python
 import cflearn
 
@@ -32,12 +30,12 @@ if __name__ == '__main__':
     # * for regression tasks, use `reg` instead
     auto = cflearn.Auto("clf").fit(*data, num_jobs=2)
 
-    # estimate manually
+    # evaluate manually
     predictions = auto.predict(x_cv)
     print("accuracy:", (y_cv == predictions).mean())
 
-    # estimate with `cflearn`
-    cflearn.estimate(
+    # evaluate with `cflearn`
+    cflearn.evaluate(
         x_cv,
         y_cv,
         pipelines=fcnn,

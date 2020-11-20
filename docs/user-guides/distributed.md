@@ -7,7 +7,7 @@ title: Distributed
 
 In `carefree-learn`, **Distributed Training** doesn't mean training your model on multiple GPUs or multiple machines, because `carefree-learn` focuses on tabular datasets (or, structured datasets) which are often not as large as unstructured datasets. Instead, **Distributed Training** in `carefree-learn` means **training multiple models** at the same time. This is important because:
 
-+ Deep Learning models suffer from randomness, so we need to train multiple models with the same algorithm and calculate the mean / std of the performances to estimate the algorithm's capacity and stability.
++ Deep Learning models suffer from randomness, so we need to train multiple models with the same algorithm and calculate the mean / std of the performances to evaluate the algorithm's capacity and stability.
 + Ensemble these models (which are trained with the same algorithm) can boost the algorithm's performance without making any changes to the algorithm itself.
 + Parameter searching will be easier & faster.
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # And it is fairly straight forward to apply stacking ensemble
     ensemble = cflearn.Ensemble.stacking(patterns)
     patterns_dict = {"fcnn_3": patterns, "fcnn_3_ensemble": ensemble}
-    cflearn.estimate(x, y, metrics=["acc", "auc"], other_patterns=patterns_dict)
+    cflearn.evaluate(x, y, metrics=["acc", "auc"], other_patterns=patterns_dict)
 ```
 
 Then you will see something like this:
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     )
     # We can further train our model with the best hyper-parameters we've obtained:
     m = cflearn.make(**hpo.best_param).fit(x, y)
-    cflearn.estimate(x, y, pipelines=m)
+    cflearn.evaluate(x, y, pipelines=m)
 ```
 
 Then you will see something like this:
