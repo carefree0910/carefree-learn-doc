@@ -128,6 +128,6 @@ $$
 1-\frac{1}{\text{num\_classes}}
 $$
 
-So the sparsity could easily exceed 90%, when `num_classes` only needs to be greater than 10, therefore it is quite natural to think of leveraging sparse data structures to cache these `one_hot` encodings. What's better is that the `embedding` encoding could be represented as sparse matrix multiplications between `one_hot` encodings and a block diagnal `embedding` look up table, so **THEORATICALLY** (🤣) we could reuse the `one_hot` encodings to get the `embedding` encodings efficiently.
+So the sparsity could easily exceed 90% when `num_classes` only needs to be greater than 10, therefore it is quite natural to think of leveraging sparse data structures to cache these `one_hot` encodings. What's better is that the `embedding` encoding could be represented as sparse matrix multiplications between `one_hot` encodings and a block diagnal `embedding` look up table, so **THEORATICALLY** (🤣) we could reuse the `one_hot` encodings to get the `embedding` encodings efficiently.
 
 Unfortunately, although [`scipy`](https://docs.scipy.org/doc/scipy/reference/sparse.html) supports sparse matrices pretty well, `PyTorch` has not yet supported them good enough. So we'll stick to the dense solutions mentioned above, but will switch to the sparse ones iff `PyTorch` releases some fancy sparsity supports!
