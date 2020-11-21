@@ -226,7 +226,7 @@ class Transformer(ModelBase):
 ...That's right, simply register your `transform`, `extract` and `head`, then `carefree-learn` will handle the rest for you🥳
 
 :::note
-For detailed development guides, please refer to [Build Your Own Models](developer-guides/build-your-own-models).
+For detailed development guides, please refer to [Build Your Own Models](developer-guides/customization).
 :::
 
 

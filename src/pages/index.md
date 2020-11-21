@@ -49,7 +49,7 @@ m = cflearn.make("wnd_full").fit(x, y)
 </Tabs>
 
 :::info
-Please refer to [Quick Start](docs/getting-started/quick-start) and [Build Your Own Models](docs/developer-guides/build-your-own-models) for detailed information.
+Please refer to [Quick Start](docs/getting-started/quick-start) and [Build Your Own Models](docs/developer-guides/customization) for detailed information.
 :::
 
 ## Why carefree-learn?

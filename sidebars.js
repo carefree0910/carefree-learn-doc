@@ -12,7 +12,7 @@ module.exports = {
       "user-guides/examples"
     ],
     "Developer Guides": [
-      "developer-guides/build-your-own-models"
+      "developer-guides/customization"
     ],
     "About": ["about/release-notes", "about/license"],
   },
