@@ -9,6 +9,7 @@ module.exports = {
     "User Guides": [
       "user-guides/auto-ml",
       "user-guides/distributed",
+      "user-guides/production",
       "user-guides/examples"
     ],
     "Developer Guides": [
