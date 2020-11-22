@@ -554,19 +554,28 @@ Although the result is satisfying, in most real-life cases it is hard to obtain 
 Since `carefree-learn` has already implemented [`CrossBlock`](https://github.com/carefree0910/carefree-learn/blob/03edf2bd8cc32b7fe2ce30be6e4196adf7ab0bde/cflearn/modules/blocks.py#L508), we can utilize it to build our `CrossHead` easily:
 
 ```python
+from typing import Optional
 from cflearn.modules.blocks import Linear
 from cflearn.modules.blocks import CrossBlock
+from cflearn.misc.toolkit import Activations
 
 # The name `cross` is actually the `scope` of this `head`
 @cflearn.register_head("cross")
 class CrossHead(cflearn.HeadBase):
-    def __init__(self, in_dim: int, out_dim: int):
+    def __init__(self, in_dim: int, out_dim: int, activation: Optional[str]):
         super().__init__(in_dim, out_dim)
         self.cross = CrossBlock(in_dim)
+        if activation is None:
+            self.activation = None
+        else:
+            self.activation = Activations.make(activation)
         self.linear = Linear(in_dim, out_dim)
     
     def forward(self, net: torch.Tensor) -> torch.Tensor:
-      return self.linear(self.cross(net, net))
+        net = self.cross(net, net)
+        if self.activation is not None:
+            net = self.activation(net)
+        return self.linear(net)
 ```
 
 After defining the `head`, we need to (at least) define the `default` config under its `scope`:
@@ -576,10 +585,10 @@ After defining the `head`, we need to (at least) define the `default` config und
 @cflearn.register_head_config("cross", "default")
 class CrossHeadConfig(cflearn.HeadConfigs):
     def get_default(self) -> Dict[str, Any]:
-        return {}
+        # We need to define `activation` because `CrossHead` requires it
+        # However we don't need to define `in_dim` and `out_dim`, because `carefree-learn` will handle them for us!
+        return {"activation": None}
 ```
-
-Since `CrossHead` doesn't really need any configurations, simply returning an empty Python `dict` will be enough.
 
 With these two steps, we have already implemented a ready-to-use `head` which can perform cross-feature operations, so the next step is to utilize it:
 
