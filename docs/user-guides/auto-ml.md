@@ -57,7 +57,7 @@ Then you will see something like this:
 ================================================================================================================================
 ```
 
-### Explained
+## Explained
 
 `cflearn.Auto.fit` will run through the following steps:
 1. define the model space automatically (or manually)
@@ -78,3 +78,14 @@ auto.plot_intermediate_values("fcnn", export_folder=export_folder)
 :::note
 It is also worth mentioning that we can pass file datasets into `cflearn.Auto` as well. See [test_auto_file](https://github.com/carefree0910/carefree-learn/blob/3fb03dbfc3e2b494f2ab03b9d8f07683fe30e7ef/tests/usages/test_basic.py#L221) for more details.
 :::
+
+
+## Production
+
+What's facinating is that we can pack the models trained by `cflearn.Auto` into a zip file for production:
+
+```python
+auto.pack("pack")
+```
+
+Please refer to [AutoML in Production](production#automl-in-production) for more details.

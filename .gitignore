@@ -11,6 +11,8 @@
 # Misc
 .idea
 _logs/*
+**/__*/*
+*.zip
 
 .DS_Store
 .env.local
