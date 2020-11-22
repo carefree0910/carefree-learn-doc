@@ -16,7 +16,7 @@ In `carefree-learn`, there are five main design principles that address this ten
 + Share configurations with the help of `Environment` (see [`Configurations`](getting-started/configurations#environment)).
 + Build some common blocks which shall be leveraged across different models (see [`Common Blocks`](#common-blocks)).
 + Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline), each focuses on certain roles.
-+ Divide `Model` into three parts: [`transform`](#transform), [`extract`](#extract) and [`head`](#head), each focuses on one part of a [`pipe`](#pipe)
++ Divide `Model` into three parts: [`transform`](#transform), [`extractor`](#extractor) and [`head`](#head), each focuses on one part of a [`pipe`](#pipe)
 + Implemente functions (`cflearn.register_*` to be exact) to ensure flexibility and control on different modules and stuffs (see [`Registration`](#registration)).
 
 We will introduce the details in the following subsections.
@@ -49,7 +49,7 @@ One thing we would like to proudly announce is that `carefree-learn` has made an
 
 ### `pipe`
 
-Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`s, `extract` some features, and then feed the final network (`head`) with these features. Here's an example:
+Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`, extract some features with `extractor`, and then feed the final network (`head`) with these features. Here's an example:
 
 ![Pipe](../static/img/pipe.png)
 
@@ -82,7 +82,7 @@ A `Linear` model represents a `LinearRegression` (regression tasks) or a `Logist
 
 :::note pipe Linear
 1. `transform` would be a `default` transform.
-2. `extract` would be an `identity` extract.
+2. `extractor` would be an `identity` extractor.
 3. `head` would be an `Linear` head.
 :::
 
@@ -93,7 +93,7 @@ An `FCNN` model is simply a **F**ully **C**onnected **N**eural **N**etwork, and 
 
 :::note pipe FCNN
 1. `transform` would be a `default` transform.
-2. `extract` would be an `identity` extract.
+2. `extractor` would be an `identity` extractor.
 3. `head` would be an `MLP` head.
 :::
 
@@ -104,35 +104,35 @@ A `Wide & Deep` model basically splits the inputs into two parts, then feed them
 
 :::note pipe wide
 1. `transform` would be a `one_hot_only` transform.
-2. `extract` would be an `identity` extract.
+2. `extractor` would be an `identity` extractor.
 3. `head` would be an `Linear` head.
 :::
 
 :::note pipe deep
 1. `transform` would be a `embedding` transform.
-2. `extract` would be an `identity` extract.
+2. `extractor` would be an `identity` extractor.
 3. `head` would be an `MLP` head.
 :::
 
 </TabItem>
 <TabItem value="rnn">
 
-An `RNN` model represents general **R**ecurrent **N**eural **N**etwork which is suitable for time series tasks. It differs from `FCNN` because it needs to extract the temporal information from the input data, so it should define a special `extract`, instead of using an `identity` one:
+An `RNN` model represents general **R**ecurrent **N**eural **N**etwork which is suitable for time series tasks. It differs from `FCNN` because it needs to extract the temporal information from the input data, so it should define a special `extractor`, instead of using an `identity` one:
 
 :::note pipe RNN
 1. `transform` would be a `default` transform.
-2. `extract` would be an `rnn` extract.
+2. `extractor` would be an `rnn` extractor.
 3. `head` would be an `MLP` head.
 :::
 
 </TabItem>
 <TabItem value="transformer">
 
-A `Transformer` model represents the encoder part of the Transformer model which has been used broadly in NLP tasks. Its representation looks familiar with `RNN`'s, except `Transformer` defines an `extract` with self attention mechanism:
+A `Transformer` model represents the encoder part of the Transformer model which has been used broadly in NLP tasks. Its representation looks familiar with `RNN`'s, except `Transformer` defines an `extractor` with self attention mechanism:
 
 :::note pipe Transformer
 1. `transform` would be a `default` transform.
-2. `extract` would be an `transformer` extract.
+2. `extractor` would be an `transformer` extractor.
 3. `head` would be an `MLP` head.
 :::
 
@@ -152,9 +152,9 @@ In this case, `carefree-learn` pre-defined 7 types of `transform`, namely:
 + `categorical_only`: use `one_hot` & `embedding`.
 + `numerical`: use numerical features only.
 
-### `extract`
+### `extractor`
 
-In most cases `extract` would simply be `identity` because we can hardly treat tabular datasets as vision datasets or natrual language datasets, since the latter ones often contain prior knowledges. However, there're one case where we often need such step, and that's when we need to resolve a time series task. In such cases, the `rnn` extract / `transformer` extract often outshines the `identity` extract.
+In most cases `extractor` would simply be `identity` because we can hardly treat tabular datasets as vision datasets or natrual language datasets, since the latter ones often contain prior knowledges. However, there're one case where we often need such step, and that's when we need to resolve a time series task. In such cases, the `rnn` extractor / `transformer` extractor often outshines the `identity` extractor.
 
 ### `head`
 
@@ -223,7 +223,7 @@ class Transformer(ModelBase):
 </TabItem>
 </Tabs>
 
-...That's right, simply register your `transform`, `extract` and `head`, then `carefree-learn` will handle the rest for you🥳
+...That's right, simply register your `transform`, `extractor` and `head`, then `carefree-learn` will handle the rest for you🥳
 
 :::note
 For detailed development guides, please refer to [Build Your Own Models](developer-guides/customization).

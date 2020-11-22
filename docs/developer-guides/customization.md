@@ -7,7 +7,7 @@ sidebar_label: Customization
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-In this page we will go through some basic concepts we need to know to build our own models in `carefree-learn`. Customizing `carefree-learn` could be very easy if you only want to construct existing blocks to form a new model structure, and should also be fairly straight forward even if you want to implement your own blocks.
+In this page we will go through some basic concepts we need to know to build our own models in `carefree-learn`. Customizing `carefree-learn` could be very easy if you only want to construct existing modules to form a new model structure, and should also be fairly straight forward even if you want to implement your own modules.
 
 :::tip
 There's a step-by-step example [here](../user-guides/examples#operations) which will walk you through the most important concepts with sufficient codes and experiments.
@@ -108,10 +108,14 @@ So after the registration mentioned above, this global `configs_dict` will be up
 
 A `HeadConfigs` inherits from `Configs` and holds more information. The reason why we implement an extra sub-class of `Configs` is that we usually need more information in `head` than in `transform` and `extractor`. For instance, we need to know the data dimensions to inference the default `output_dim`.
 
+:::note
+We need to call `cflearn.register_head_config` if we want to register a new `HeadConfigs`.
+:::
 
-## Constructing Existing Blocks
 
-With the help of `Configs`, constructing existing blocks is pretty easy because we can access different configurations by specifying their `scope` and `name`. In fact, as mentioned in [`Design Principles`](../design-principles#examples), `carefree-learn` itself is actually implementing its models by such similar process:
+## Constructing Existing Modules
+
+With the help of `Configs`, constructing existing modules is pretty easy because we can access different configurations by specifying their `scope` and `name`. In fact, as mentioned in [`Design Principles`](../design-principles#examples), `carefree-learn` itself is actually implementing its models by such similar process:
 
 <Tabs
   groupId="models"
@@ -417,4 +421,203 @@ BrandNewModel(
 
 ## Customizing New Modules
 
+In this section, we'll introduce how to customize your own [`extractor`](../design-principles#extractor) and [`head`](../design-principles#head).
 
+:::note
+Currently `transform` is not customizable because `carefree-learn` sticks to `one_hot` and `embedding`. Please refer to [Design Principles](../design-principles#transform) for more details.
+:::
+
+:::tip
+Again, we recommend [this](../user-guides/examples#operations) step-by-step example which will walk you through the most important concepts with sufficient codes and experiments.
+:::
+
+### Customize `extractor`
+
+Recap that an [`extractor`](../design-principles#extractor) is responsible for extracting the (transformed) input data into latent features. For tabular datasets, it will simply be `identity` in most cases because we can hardly have any prior knowledge.
+
+We can, however, inject prior knowledge into `carefree-learn` if we happen to have one. For example, if we have two features, namely *working hours* ($t$) and *wage* ($x$), and the target is to calculate the *actual income* ($y$):
+
+$$
+y=t\times x
+$$
+
+Although this task seems easy to humans, it is actually quite difficult for Neural Networks because Neural Networks lack information of multiplication across features. We can run a small experiment to quickly demonstrate this:
+
+:::note
+The example showing below is a simplified version of [Operations](../user-guides/examples#operations).
+:::
+
+```python
+import cflearn
+import numpy as np
+
+x = np.random.random([10000, 2]) * 2.0
+y = np.prod(x, axis=1, keepdims=True)
+
+# `reg` represents a regression task
+# `use_simplify_data` indicates that `carefree-learn` will do nothing to the input data
+kwargs = {"task_type": "reg", "use_simplify_data": True}
+fcnn = cflearn.make(**kwargs).fit(x, y)
+cflearn.evaluate(x, y, pipelines=fcnn)
+```
+
+:::tip
+We've set `use_simplify_data` to `True`. That's because we want to hold the datasets' property, so we should not apply any pre-processing strategies to the original dataset.
+:::
+
+Which yields
+
+```text
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|          fcnn          |    0.062123    |    0.000000    |    -0.06212    |    0.006766    |    0.000000    |    -0.00676    |
+================================================================================================================================
+```
+
+We can see that `fcnn` failed to approach to the ground truth. In order to improve this, we can implement an `extractor` to generate a new feature representing cross-feature multiplication:
+
+```python
+import torch
+
+# The name `cross_multiplication` is actually the `scope` of this `extractor`
+@cflearn.register_extractor("cross_multiplication")
+class CrossMultiplication(cflearn.ExtractorBase):
+    # This property represents the dimension of this `extractor`'s output
+    @property
+    def out_dim(self) -> int:
+        return 1
+
+    # This is where your algorithms should be implemented
+    # net.shape : [ batch_size, in_dim ]
+    def forward(self, net: torch.Tensor) -> torch.Tensor:
+        prod = net[..., 0] * net[..., 1]
+        return prod.view([-1, 1])
+```
+
+After defining the `extractor`, we need to (at least) define the `default` config under its `scope`:
+
+```python
+from typing import Any
+from typing import Dict
+
+@cflearn.register_config("cross_multiplication", "default")
+class CrossMultiplicationExtractorConfig(cflearn.Configs):
+    def get_default(self) -> Dict[str, Any]:
+        return {}
+```
+
+Since `CrossMultiplication` doesn't really need any configurations, simply returning an empty Python `dict` will be enough.
+
+With these two steps, we have already implemented a ready-to-use `extractor` which holds our prior knowledge, so the next step is to utilize it:
+
+```python
+@cflearn.register_model("multiplication")
+@cflearn.register_pipe("linear", extractor="cross_multiplication")
+class MultiplicationNetwork(cflearn.ModelBase):
+    pass
+```
+
+And that's it! `carefree-learn` will do most of the boiler plates for you, so specify the `extractor` and `head` will be enough.
+
+Let's run a small experiment to demonstrate the validaty of our new model:
+
+```python
+mul = cflearn.make("multiplication", **kwargs).fit(x, y)
+cflearn.evaluate(x, y, pipelines=[fcnn, mul])
+```
+
+Which yields
+
+```text
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|          fcnn          |    0.065125    | -- 0.000000 -- |    -0.06512    |    0.007785    | -- 0.000000 -- |    -0.00778    |
+--------------------------------------------------------------------------------------------------------------------------------
+|     multiplication     | -- 0.000078 -- | -- 0.000000 -- | -- -0.00007 -- | -- 0.000000 -- | -- 0.000000 -- | -- -0.00000 -- |
+================================================================================================================================
+```
+
+As we expected, the `multiplication` model approaches to the ground truth🥳
+
+### Customize `head`
+
+Although the result is satisfying, in most real-life cases it is hard to obtain such strong prior knowledges. Recap that `fcnn` fails because it lacks cross-feature information, so a model with cross-feature information should be able to solve this *total income* task, and that's where Deep-and-Cross[^1] network comes to rescue:
+
+![Cross Layer](../../static/img/publications/cross-layer.png)
+
+Since `carefree-learn` has already implemented [`CrossBlock`](https://github.com/carefree0910/carefree-learn/blob/03edf2bd8cc32b7fe2ce30be6e4196adf7ab0bde/cflearn/modules/blocks.py#L508), we can utilize it to build our `CrossHead` easily:
+
+```python
+from cflearn.modules.blocks import Linear
+from cflearn.modules.blocks import CrossBlock
+
+# The name `cross` is actually the `scope` of this `head`
+@cflearn.register_head("cross")
+class CrossHead(cflearn.HeadBase):
+    def __init__(self, in_dim: int, out_dim: int):
+        super().__init__(in_dim, out_dim)
+        self.cross = CrossBlock(in_dim)
+        self.linear = Linear(in_dim, out_dim)
+    
+    def forward(self, net: torch.Tensor) -> torch.Tensor:
+      return self.linear(self.cross(net, net))
+```
+
+After defining the `head`, we need to (at least) define the `default` config under its `scope`:
+
+```python
+# Recall that in the `HeadConfigs` section, we've explained why we need to define `HeadConfigs` subclass
+@cflearn.register_head_config("cross", "default")
+class CrossHeadConfig(cflearn.HeadConfigs):
+    def get_default(self) -> Dict[str, Any]:
+        return {}
+```
+
+Since `CrossHead` doesn't really need any configurations, simply returning an empty Python `dict` will be enough.
+
+With these two steps, we have already implemented a ready-to-use `head` which can perform cross-feature operations, so the next step is to utilize it:
+
+```python
+@cflearn.register_model("cross")
+@cflearn.register_pipe("cross")
+class CrossNetwork(cflearn.ModelBase):
+    pass
+```
+
+Again, that's it! Let's run a small experiment to demonstrate the validaty of our new model:
+
+```python
+cross = cflearn.make("cross", **kwargs).fit(x, y)
+cflearn.evaluate(x, y, pipelines=[fcnn, mul, cross])
+```
+
+Which yields
+
+```text
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|         cross          |    0.049729    | -- 0.000000 -- |    -0.04972    |    0.004354    | -- 0.000000 -- |    -0.00435    |
+--------------------------------------------------------------------------------------------------------------------------------
+|          fcnn          |    0.065881    | -- 0.000000 -- |    -0.06588    |    0.008105    | -- 0.000000 -- |    -0.00810    |
+--------------------------------------------------------------------------------------------------------------------------------
+|     multiplication     | -- 0.000004 -- | -- 0.000000 -- | -- -0.00000 -- | -- 0.000000 -- | -- 0.000000 -- | -- -0.00000 -- |
+================================================================================================================================
+```
+
+Although the new `cross` model is not as good as the `multiplication` model (which is actually 'cheating' because it can see the ground truth labels directly), it outperforms `fcnn` significantly🥳
+
+### Conclusions
+
+The above two sections showed us how to customize our own `extractor` and `head`, which should be sufficient to implement most of the models targeting tabular datasets. `carefree-learn` actually supports more customizations (e.g. metrics, initializations, etc), but they are more of some tricks than the main part of an algorithm. We hope that this guide can help you leverage `carefree-learn` in your own tasks!
+
+
+[^1]: Wang, Ruoxi, et al. “Deep & cross network for ad click predictions.” Proceedings of the ADKDD’17. 2017. 1-7. 

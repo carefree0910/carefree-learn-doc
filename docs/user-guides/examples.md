@@ -272,7 +272,7 @@ Which yields
 
 Although `fcnn` outperforms `linear`, it is still not as satisfied as the results that we've got in `add` dataset. That's because although `fcnn` has strong approximation power, its representations are basically based on the `add` operations between features, and the non-linearities come from an activation function applied to **EACH** neuron. Which means, `fcnn` can hardly learn `prod` operation **ACROSS** features.
 
-A trivial thought is to manually `extract` the `prod` features $\tilde x$ from the input data:
+A trivial thought is to manually extract the `prod` features $\tilde x$ from the input data with a new `extractor`:
 
 $$
 \tilde x\triangleq \prod_{i=1}^d x_i
@@ -292,7 +292,7 @@ import torch
 from typing import Any
 from typing import Dict
 
-# register an `extract` which represents the `prod` operation
+# register an `extractor` which represents the `prod` operation
 @cflearn.register_extractor("prod_extractor")
 class ProdExtractor(cflearn.ExtractorBase):
     @property
@@ -303,7 +303,7 @@ class ProdExtractor(cflearn.ExtractorBase):
         return net.prod(dim=1, keepdim=True)
 
 
-# define the `Config` for this `extract`
+# define the `Config` for this `extractor`
 # since `ProdExtractor` don't need any configurations, we can simply return an empty dict here
 @cflearn.register_config("prod_extractor", "default")
 class ProdExtractorConfig(cflearn.Configs):
@@ -312,15 +312,15 @@ class ProdExtractorConfig(cflearn.Configs):
 ```
 
 :::tip
-If you are interested in how does `extract` actually work in `carefree-learn`, please refer to [pipe](../design-principles#pipe) and [extract](../design-principles#extract) for more information.
+If you are interested in how does `extractor` actually work in `carefree-learn`, please refer to [pipe](../design-principles#pipe) and [extractor](../design-principles#extractor) for more information.
 :::
 
-After defining the `extract`, we need to define a model that leverages it:
+After defining the `extractor`, we need to define a model that leverages it:
 
 ```python
 # we call this new model `prod`
 @cflearn.register_model("prod")
-# we use our new `extract` followed by traditional `linear` model
+# we use our new `extractor` followed by traditional `linear` model
 @cflearn.register_pipe("linear", extractor="prod_extractor")
 class ProdNetwork(cflearn.ModelBase):
     pass
@@ -349,7 +349,7 @@ Which yields
 ================================================================================================================================
 ```
 
-As we expected, the `prod` approaches to the ground truth easily.
+As we expected, the `prod` model approaches to the ground truth easily.
 
 We can also check whether the model has actually learned the ground truth by checking its parameters ($w$ and $b$):
 
@@ -395,7 +395,7 @@ Which yields
 
 Seems that the non-expert in both domain (`fcnn`) outperforms the domain experts (`linear`, `prod`)! But again, this is far from satisfying because theoratically we can combine the domain experts to build an expert in `mix` dataset.
 
-Thanks to `carefree-learn`, we again can actually do so, but this time we'll need some more coding. Recall that we build an expert in `prod` dataset by defining a novel `extract`, because we needed to pre-process the input data. However in `mix`, what we actually need is to combine `linear` and `prod`, which means we need to define a novel `head` this time.
+Thanks to `carefree-learn`, we again can actually do so, but this time we'll need some more coding. Recall that we build an expert in `prod` dataset by defining a novel `extractor`, because we needed to pre-process the input data. However in `mix`, what we actually need is to combine `linear` and `prod`, which means we need to define a novel `head` this time.
 
 :::tip
 If you are interested in how does `head` actually work in `carefree-learn`, please refer to [pipe](../design-principles#pipe) and [head](../design-principles#head) for more information.
@@ -416,10 +416,10 @@ Since $\hat y_{11}$ can fit `add` dataset perfectly, $\hat y_{22}$ can fit `prod
 ```python
 from cflearn.modules.blocks import Linear
 
-@cflearn.register_head("mixture_head")
+@cflearn.register_head("mixture")
 class MixtureHead(cflearn.HeadBase):
     def __init__(self, in_dim: int, out_dim: int, target_dim: int):
-        super().__init__()
+        super().__init__(in_dim, out_dim)
         # when `target_dim == 0`, it represents an `add` head (y_11)
         # when `target_dim == 1`, it represents a `prod` head (y_22)
         self.dim = target_dim
@@ -433,13 +433,13 @@ class MixtureHead(cflearn.HeadBase):
 
 # we need to define two configurations for `add` and `prod` respectively    
 
-@cflearn.register_head_config("mixture_head", "add")
+@cflearn.register_head_config("mixture", "add")
 class MixtureHeadAddConfig(cflearn.HeadConfigs):
     def get_default(self) -> Dict[str, Any]:
         return {"target_dim": 0}
 
 
-@cflearn.register_head_config("mixture_head", "prod")
+@cflearn.register_head_config("mixture", "prod")
 class MixtureHeadProdConfig(cflearn.HeadConfigs):
     def get_default(self) -> Dict[str, Any]:
         return {"target_dim": 1}
@@ -450,13 +450,13 @@ class MixtureHeadProdConfig(cflearn.HeadConfigs):
 @cflearn.register_pipe(
     "add",
     extractor="identity",
-    head="mixture_head",
+    head="mixture",
     head_config="add",
 )
 @cflearn.register_pipe(
     "prod",
     extractor="prod_extractor",
-    head="mixture_head",
+    head="mixture",
     head_config="prod",
 )
 class MixtureNetwork(cflearn.ModelBase):
@@ -484,7 +484,7 @@ Which yields
 ================================================================================================================================
 ```
 
-As we expected, the `mixture` approaches to the ground truth easily.
+As we expected, the `mixture` model approaches to the ground truth easily.
 
 We can also check whether the model has actually learned the ground truth by checking its parameters ($w$ and $b$):
 
