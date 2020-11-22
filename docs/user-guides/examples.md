@@ -289,9 +289,6 @@ But how could we apply this prior knowledge to our model? Thanks to `carefree-le
 ```python
 import torch
 
-from typing import Any
-from typing import Dict
-
 # register an `extractor` which represents the `prod` operation
 @cflearn.register_extractor("prod_extractor")
 class ProdExtractor(cflearn.ExtractorBase):
@@ -305,10 +302,7 @@ class ProdExtractor(cflearn.ExtractorBase):
 
 # define the `Config` for this `extractor`
 # since `ProdExtractor` don't need any configurations, we can simply return an empty dict here
-@cflearn.register_config("prod_extractor", "default")
-class ProdExtractorConfig(cflearn.Configs):
-    def get_default(self) -> Dict[str, Any]:
-        return {}
+cflearn.register_config("prod_extractor", "default", config={})
 ```
 
 :::tip
@@ -319,11 +313,11 @@ After defining the `extractor`, we need to define a model that leverages it:
 
 ```python
 # we call this new model `prod`
-@cflearn.register_model("prod")
 # we use our new `extractor` followed by traditional `linear` model
-@cflearn.register_pipe("linear", extractor="prod_extractor")
-class ProdNetwork(cflearn.ModelBase):
-    pass
+cflearn.register_model(
+    "prod",
+    pipes=[cflearn.PipeInfo("linear", extractor="prod_extractor")],
+)
 ```
 
 And that's it! We can now train our new model and evaluate it:
@@ -432,35 +426,28 @@ class MixtureHead(cflearn.HeadBase):
         return torch.cat(tensors, dim=1)
 
 # we need to define two configurations for `add` and `prod` respectively    
+cflearn.register_head_config("mixture", "add", head_configs={"target_dim": 0})
+cflearn.register_head_config("mixture", "prod", head_configs={"target_dim": 1})
 
-@cflearn.register_head_config("mixture", "add")
-class MixtureHeadAddConfig(cflearn.HeadConfigs):
-    def get_default(self) -> Dict[str, Any]:
-        return {"target_dim": 0}
-
-
-@cflearn.register_head_config("mixture", "prod")
-class MixtureHeadProdConfig(cflearn.HeadConfigs):
-    def get_default(self) -> Dict[str, Any]:
-        return {"target_dim": 1}
-    
 # we use our new `head` to define the new model
 # note that we need two `pipe`s, one for `add` and the other for `prod`
-@cflearn.register_model("mixture")
-@cflearn.register_pipe(
-    "add",
-    extractor="identity",
-    head="mixture",
-    head_config="add",
+cflearn.register_model(
+    "mixture",
+    pipes=[
+        cflearn.PipeInfo(
+            "add",
+            extractor="identity",
+            head="mixture",
+            head_config="add",
+        ),
+        cflearn.PipeInfo(
+            "prod",
+            extractor="prod_extractor",
+            head="mixture",
+            head_config="prod",
+        )
+    ]
 )
-@cflearn.register_pipe(
-    "prod",
-    extractor="prod_extractor",
-    head="mixture",
-    head_config="prod",
-)
-class MixtureNetwork(cflearn.ModelBase):
-    pass
 
 mixture = cflearn.make("mixture", **kwargs).fit(x, y_mix)
 cflearn.evaluate(x, y_mix, pipelines=[linear, fcnn, prod, mixture])

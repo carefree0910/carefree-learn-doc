@@ -41,15 +41,8 @@ Then we can leverage `cflearn.register_config` to register different configurati
 ```python
 import cflearn
 
-@cflearn.register_config("foo", "one")
-class FooOneConfig(cflearn.Configs):
-    def get_default(self):
-        return {"dummy_value": 1.0}
-
-@cflearn.register_config("foo", "two")
-class FooTwoConfig(cflearn.Configs):
-    def get_default(self):
-        return {"dummy_value": 2.0}
+cflearn.register_config("foo", "one", config={"dummy_value": 1.0})
+cflearn.register_config("foo", "two", config={"dummy_value": 2.0})
 ```
 
 :::info
@@ -260,13 +253,15 @@ At the last part of this section, we will demonstrate how could we build a new m
 ```python
 import cflearn
 
-@cflearn.register_model("brand_new_model")
-@cflearn.register_pipe("dndf", transform="one_hot_only")
-@cflearn.register_pipe("linear", transform="one_hot")
-@cflearn.register_pipe("fcnn", transform="numerical")
-@cflearn.register_pipe("fcnn2", transform="embedding_only", extractor="identity", head="fcnn")
-class BrandNewModel(cflearn.ModelBase):
-    pass
+cflearn.register_model(
+    "brand_new_model",
+    pipes=[
+        cflearn.PipeInfo("dndf", transform="one_hot_only"),
+        cflearn.PipeInfo("linear", transform="one_hot"),
+        cflearn.PipeInfo("fcnn", transform="numerical"),
+        cflearn.PipeInfo("fcnn2", transform="embedding_only", extractor="identity", head="fcnn"),
+    ]
+)
 ```
 
 We can actually play with it:
@@ -286,12 +281,12 @@ print(m.model)
 <p>
 
 ```text
-BrandNewModel(
+_(
   (pipes): Pipes(
-    (fcnn2): embedding_only_identity_default -> fcnn_default
-    (fcnn): numerical_identity_default -> fcnn_default
-    (linear): one_hot_identity_default -> linear_default
     (dndf): one_hot_only_identity_default -> dndf_default
+    (linear): one_hot_identity_default -> linear_default
+    (fcnn): numerical_identity_default -> fcnn_default
+    (fcnn2): embedding_only_identity_default -> fcnn_default
   )
   (loss): L1Loss()
   (encoder): Encoder(
@@ -320,57 +315,45 @@ BrandNewModel(
     (embedding_dropout): Dropout(keep=0.8)
   )
   (transforms): ModuleDict(
-    (embedding_only): Transform(
-      (use_one_hot): False
-      (use_embedding): True
-      (only_categorical): True
-    )
-    (numerical): Transform(
-      (use_one_hot): False
+    (one_hot_only): Transform(
+      (use_one_hot): True
       (use_embedding): False
-      (only_categorical): False
+      (only_categorical): True
     )
     (one_hot): Transform(
       (use_one_hot): True
       (use_embedding): False
       (only_categorical): False
     )
-    (one_hot_only): Transform(
-      (use_one_hot): True
+    (numerical): Transform(
+      (use_one_hot): False
       (use_embedding): False
+      (only_categorical): False
+    )
+    (embedding_only): Transform(
+      (use_one_hot): False
+      (use_embedding): True
       (only_categorical): True
     )
   )
   (extractors): ModuleDict(
-    (embedding_only_identity_default): Identity()
-    (numerical_identity_default): Identity()
-    (one_hot_identity_default): Identity()
     (one_hot_only_identity_default): Identity()
+    (one_hot_identity_default): Identity()
+    (numerical_identity_default): Identity()
+    (embedding_only_identity_default): Identity()
   )
   (heads): ModuleDict(
-    (fcnn2): FCNNHead(
-      (mlp): MLP(
-        (mappings): ModuleList(
-          (0): Mapping(
-            (linear): Linear(
-              (linear): Linear(in_features=20, out_features=64, bias=False)
-            )
-            (bn): BN(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            (activation): ReLU(inplace=True)
-            (dropout): Dropout(keep=0.5)
-          )
-          (1): Mapping(
-            (linear): Linear(
-              (linear): Linear(in_features=64, out_features=64, bias=False)
-            )
-            (bn): BN(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            (activation): ReLU(inplace=True)
-            (dropout): Dropout(keep=0.5)
-          )
-          (2): Linear(
-            (linear): Linear(in_features=64, out_features=1, bias=True)
-          )
+    (dndf): DNDFHead(
+      (dndf): DNDF(
+        (tree_proj): Linear(
+          (linear): Linear(in_features=50, out_features=310, bias=True)
+          (pruner): Pruner(method='auto_prune')
         )
+      )
+    )
+    (linear): LinearHead(
+      (linear): Linear(
+        (linear): Linear(in_features=55, out_features=1, bias=True)
       )
     )
     (fcnn): FCNNHead(
@@ -398,16 +381,28 @@ BrandNewModel(
         )
       )
     )
-    (linear): LinearHead(
-      (linear): Linear(
-        (linear): Linear(in_features=55, out_features=1, bias=True)
-      )
-    )
-    (dndf): DNDFHead(
-      (dndf): DNDF(
-        (tree_proj): Linear(
-          (linear): Linear(in_features=50, out_features=310, bias=True)
-          (pruner): Pruner(method='auto_prune')
+    (fcnn2): FCNNHead(
+      (mlp): MLP(
+        (mappings): ModuleList(
+          (0): Mapping(
+            (linear): Linear(
+              (linear): Linear(in_features=20, out_features=64, bias=False)
+            )
+            (bn): BN(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (activation): ReLU(inplace=True)
+            (dropout): Dropout(keep=0.5)
+          )
+          (1): Mapping(
+            (linear): Linear(
+              (linear): Linear(in_features=64, out_features=64, bias=False)
+            )
+            (bn): BN(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (activation): ReLU(inplace=True)
+            (dropout): Dropout(keep=0.5)
+          )
+          (2): Linear(
+            (linear): Linear(in_features=64, out_features=1, bias=True)
+          )
         )
       )
     )
@@ -500,13 +495,7 @@ class CrossMultiplication(cflearn.ExtractorBase):
 After defining the `extractor`, we need to (at least) define the `default` config under its `scope`:
 
 ```python
-from typing import Any
-from typing import Dict
-
-@cflearn.register_config("cross_multiplication", "default")
-class CrossMultiplicationExtractorConfig(cflearn.Configs):
-    def get_default(self) -> Dict[str, Any]:
-        return {}
+cflearn.register_config("cross_multiplication", "default", config={})
 ```
 
 Since `CrossMultiplication` doesn't really need any configurations, simply returning an empty Python `dict` will be enough.
@@ -514,13 +503,13 @@ Since `CrossMultiplication` doesn't really need any configurations, simply retur
 With these two steps, we have already implemented a ready-to-use `extractor` which holds our prior knowledge, so the next step is to utilize it:
 
 ```python
-@cflearn.register_model("multiplication")
-@cflearn.register_pipe("linear", extractor="cross_multiplication")
-class MultiplicationNetwork(cflearn.ModelBase):
-    pass
+cflearn.register_model(
+    "multiplication",
+    pipes=[cflearn.PipeInfo("linear", extractor="cross_multiplication")]
+)
 ```
 
-And that's it! `carefree-learn` will do most of the boiler plates for you, so specify the `extractor` and `head` will be enough.
+And that's it! Because `carefree-learn` will do most of the boiler plates for you.
 
 Let's run a small experiment to demonstrate the validaty of our new model:
 
@@ -564,7 +553,7 @@ from cflearn.misc.toolkit import Activations
 class CrossHead(cflearn.HeadBase):
     def __init__(self, in_dim: int, out_dim: int, activation: Optional[str]):
         super().__init__(in_dim, out_dim)
-        self.cross = CrossBlock(in_dim)
+        self.cross = CrossBlock(in_dim, residual=False, bias=False)
         if activation is None:
             self.activation = None
         else:
@@ -581,22 +570,16 @@ class CrossHead(cflearn.HeadBase):
 After defining the `head`, we need to (at least) define the `default` config under its `scope`:
 
 ```python
-# Recall that in the `HeadConfigs` section, we've explained why we need to define `HeadConfigs` subclass
-@cflearn.register_head_config("cross", "default")
-class CrossHeadConfig(cflearn.HeadConfigs):
-    def get_default(self) -> Dict[str, Any]:
-        # We need to define `activation` because `CrossHead` requires it
-        # However we don't need to define `in_dim` and `out_dim`, because `carefree-learn` will handle them for us!
-        return {"activation": None}
+# Notice that we need to call `register_head_config` for registering `HeadConfigs`, as mentioned in the `HeadConfigs` section
+# We need to define `activation` because `CrossHead` requires it
+# However we don't need to define `in_dim` and `out_dim`, because `carefree-learn` will handle them for us!
+cflearn.register_head_config("cross", "default", head_config={"activation": None})
 ```
 
 With these two steps, we have already implemented a ready-to-use `head` which can perform cross-feature operations, so the next step is to utilize it:
 
 ```python
-@cflearn.register_model("cross")
-@cflearn.register_pipe("cross")
-class CrossNetwork(cflearn.ModelBase):
-    pass
+cflearn.register_model("cross", pipes=[cflearn.PipeInfo("cross")])
 ```
 
 Again, that's it! Let's run a small experiment to demonstrate the validaty of our new model:
@@ -614,15 +597,19 @@ Which yields
 --------------------------------------------------------------------------------------------------------------------------------
 |                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
 --------------------------------------------------------------------------------------------------------------------------------
-|         cross          |    0.049729    | -- 0.000000 -- |    -0.04972    |    0.004354    | -- 0.000000 -- |    -0.00435    |
+|         cross          |    0.000178    | -- 0.000000 -- |    -0.00017    |    0.000000    | -- 0.000000 -- |    -0.00000    |
 --------------------------------------------------------------------------------------------------------------------------------
-|          fcnn          |    0.065881    | -- 0.000000 -- |    -0.06588    |    0.008105    | -- 0.000000 -- |    -0.00810    |
+|          fcnn          |    0.064953    | -- 0.000000 -- |    -0.06495    |    0.007111    | -- 0.000000 -- |    -0.00711    |
 --------------------------------------------------------------------------------------------------------------------------------
-|     multiplication     | -- 0.000004 -- | -- 0.000000 -- | -- -0.00000 -- | -- 0.000000 -- | -- 0.000000 -- | -- -0.00000 -- |
+|     multiplication     | -- 0.000025 -- | -- 0.000000 -- | -- -0.00002 -- | -- 0.000000 -- | -- 0.000000 -- | -- -0.00000 -- |
 ================================================================================================================================
 ```
 
-Although the new `cross` model is not as good as the `multiplication` model (which is actually 'cheating' because it can see the ground truth labels directly), it outperforms `fcnn` significantly🥳
+As we expected, the `cross` model approaches to the ground truth🥳
+
+:::note
+Notice that we've used `residual=False` in `CrossBlock`, which is the secret ingredient of why `cross` model can approach to the ground truth.
+:::
 
 ### Conclusions
 
