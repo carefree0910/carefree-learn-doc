@@ -17,12 +17,18 @@ module.exports = {
     prism: {
       theme: require('prism-react-renderer/themes/github'),
     },
+    announcementBar: {
+      id: 'supportus',
+      content:
+        '⭐️ If you like carefree-learn, give it a star on <a target="_blank" href="https://github.com/carefree0910/carefree-learn">GitHub</a>! ⭐️',
+    },
+    algolia: {
+      apiKey: '42cba8d66353791f378a6fbc4d8d05cf',
+      indexName: 'carefree-learn',
+      contextualSearch: true,
+    },
     navbar: {
       title: 'carefree-learn',
-      // logo: {
-      //   alt: 'carefree-learn',
-      //   src: 'img/logo.svg',
-      // },
       items: [
         {
           to: 'docs/',
@@ -33,8 +39,9 @@ module.exports = {
         {to: 'blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/carefree0910/carefree-learn',
-          label: 'GitHub',
           position: 'right',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
         },
       ],
     },
