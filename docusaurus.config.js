@@ -30,7 +30,7 @@ module.exports = {
           label: 'Docs',
           position: 'left',
         },
-        // {to: 'blog', label: 'Blog', position: 'left'},
+        {to: 'blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/carefree0910/carefree-learn',
           label: 'GitHub',
@@ -67,19 +67,19 @@ module.exports = {
             },
           ],
         },
-        // {
-        //   title: 'More',
-        //   items: [
-        //     {
-        //       label: 'Blog',
-        //       to: 'blog',
-        //     },
-        //     {
-        //       label: 'GitHub',
-        //       href: 'https://github.com/carefree0910/carefree-learn',
-        //     },
-        //   ],
-        // },
+        {
+          title: 'More',
+          items: [
+            {
+              label: 'Blog',
+              to: 'blog',
+            },
+            {
+              label: 'GitHub',
+              href: 'https://github.com/carefree0910/carefree-learn',
+            },
+          ],
+        },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} carefree-learn, carefree0910. Built with Docusaurus.`,
     },
