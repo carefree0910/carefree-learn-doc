@@ -616,4 +616,92 @@ Notice that we've used `residual=False` in `CrossBlock`, which is the secret ing
 The above two sections showed us how to customize our own `extractor` and `head`, which should be sufficient to implement most of the models targeting tabular datasets. `carefree-learn` actually supports more customizations (e.g. metrics, initializations, etc), but they are more of some tricks than the main part of an algorithm. We hope that this guide can help you leverage `carefree-learn` in your own tasks!
 
 
+## Customize New Losses
+
+In this section, we'll introduce how to customize your own losses. Customizing new losses often means that you're facing a difficult task, and you're using your talent to solve it. So congratulations to you because you've reached here!
+
+### Introduction
+
+In `carefree-learn`, it is pretty straight forward to define new losses. For example, `carefree-learn` itself defines `MSELoss` as follows:
+
+```python
+@LossBase.register("mse")
+class MSELoss(LossBase):
+    def _core(
+        self,
+        forward_results: tensor_dict_type,
+        target: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        return F.mse_loss(forward_results["predictions"], target, reduction="none")
+```
+
+There are a few things that we need to clarify:
++ The minimal requirement is to implement the abstract `_core` method, as shown above. We need to make sure that this method returns the *raw* losses (notice that we've used `reduction="none"` in `F.mse_loss`), because `carefree-learn` requires the *raw* losses to further perform some post-processings.
++ We have `forward_results` as input, which is a `tensor_dict_type`. This is exactly what a [`Model`](../design-principles#model) will return to you. In most cases, this is simply `{"predictions": predictions}`. But in some special cases (e.g. the [`DDR`](https://github.com/carefree0910/carefree-learn/blob/c80365049c0cb9e5baf43c1a1e7cabcdc04610ed/cflearn/models/ddr/model.py#L20) model), the hierarchy may be more complicated than one single `"predictions"` key. For example, in quantile models ([`QuantileFCNN`](https://github.com/carefree0910/carefree-learn/blob/c80365049c0cb9e5baf43c1a1e7cabcdc04610ed/cflearn/models/fcnn.py#L18), [`DDR`](https://github.com/carefree0910/carefree-learn/blob/c80365049c0cb9e5baf43c1a1e7cabcdc04610ed/cflearn/models/ddr/model.py#L20)), we require developers to include a `"quantiles"` key in `forward_results`, so we can implement the `Quantile` loss as follows:
+
+```python
+@LossBase.register("quantile")
+class Quantile(LossBase):
+    def _init_config(self, config: Dict[str, Any]) -> None:
+        self.q = ...
+
+    def _core(
+        self,
+        forward_results: tensor_dict_type,
+        target: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        quantile_error = target - forward_results["quantiles"]
+        neg_errors = self.q * quantile_error
+        pos_errors = (self.q - 1) * quantile_error
+        quantile_losses = torch.max(neg_errors, pos_errors)
+        return quantile_losses.mean(1, keepdim=True)
+```
+
+So basically you only need to consider how to fetch one (or some) of the outputs from your model, compare it (or them) to the target, and finally get the (raw) losses.
+
+### Example
+
+In this section, we will provide an example to illustrate how to define a new loss function, which only cares about whether the outputs of the model is close to `1`.
+
+```python
+import cflearn
+
+@cflearn.register_loss("to_one")
+class ToOneLoss(cflearn.LossBase):
+    def _core(self, forward_results, target, **kwargs):
+        return (forward_results["predictions"] - 1.0).abs()
+```
+
+:::note
+You might notice that `carefree-learn` has provided `cflearn.register_loss` API as an alias of `LossBase.register`.
+:::
+
+We can try this loss with a simple experiment:
+
+```python
+import numpy as np
+from cflearn.misc.toolkit import to_numpy
+
+x = np.random.random([1000, 4])
+y = np.random.random([1000, 1])
+# we need to use `loss` as metrics here
+# because `mae` and `mse` are no longer valid metrics under the `to_one` loss
+m = cflearn.make("linear", loss="to_one", metrics="loss").fit(x, y)
+linear = m.model.heads["linear"].linear
+print("w:", to_numpy(linear.weight.data))
+print("b:", to_numpy(linear.bias.data))
+```
+
+Which yields
+
+```text
+w: [[-3.6413432e-05  3.4193643e-05 -1.0862313e-04  1.1812412e-04]]
+b: [1.0000271]
+```
+
+This means that the `to_one` loss is actually working😆
+
+
 [^1]: Wang, Ruoxi, et al. “Deep & cross network for ad click predictions.” Proceedings of the ADKDD’17. 2017. 1-7. 
