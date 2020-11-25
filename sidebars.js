@@ -7,6 +7,7 @@ module.exports = {
       "getting-started/configurations"
     ],
     "User Guides": [
+      "user-guides/apis",
       "user-guides/auto-ml",
       "user-guides/distributed",
       "user-guides/production",

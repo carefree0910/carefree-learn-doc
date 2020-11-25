@@ -52,7 +52,7 @@ You might notice that the best results of each column is highlighted with a pair
 
 ## Benchmarking
 
-`carefree-learn` has a related repository (namely [`carefree-learn-benchmark`](https://github.com/carefree0910/carefree-learn-benchmark)) which implemented some sophisticated benchmarking functionalities. However, for many common use cases, `carefree-learn` provides `cflearn.repeat_with` and `cflearn.evaluate` for quick benchmarking. For example, if we want to compare the `linear` model and the `fcnn` model by running them `3` times, we can simply:
+`carefree-learn` has a related repository (namely [`carefree-learn-benchmark`](https://github.com/carefree0910/carefree-learn-benchmark)) which implemented some sophisticated benchmarking functionalities. However, for many common use cases, `carefree-learn` provides [`cflearn.repeat_with`](apis#repeat_with) and [`cflearn.evaluate`](apis#evaluate) for quick benchmarking. For example, if we want to compare the `linear` model and the `fcnn` model by running them `3` times, we can simply:
 
 ```python
 import cflearn
