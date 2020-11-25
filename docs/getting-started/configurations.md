@@ -111,16 +111,20 @@ Since some fields in `Elements` need to be inferenced with other information, th
 ```python
 class Elements(NamedTuple):
     model: str = "fcnn"
+    data_config: Optional[Dict[str, Any]] = None
     task_type: Optional[task_type_type] = None
     use_simplify_data: bool = False
-    data_config: Optional[Dict[str, Any]] = None
+    ts_config: Optional[TimeSeriesConfig] = None
+    aggregation: Optional[str] = None
+    aggregation_config: Optional[Dict[str, Any]] = None
+    ts_label_collator_config: Optional[Dict[str, Any]] = None
     delim: Optional[str] = None
     has_column_names: Optional[bool] = None
     read_config: Optional[Dict[str, Any]] = None
-    batch_size: int = 128
-    cv_split: Optional[Union[float, int]] = None
     logging_folder: Optional[str] = None
     logging_file: Optional[str] = None
+    batch_size: int = 128
+    cv_split: Optional[Union[float, int]] = None
     use_amp: bool = False
     min_epoch: Optional[int] = None
     num_epoch: Optional[int] = None
@@ -129,10 +133,6 @@ class Elements(NamedTuple):
     max_snapshot_file: int = 5
     clip_norm: float = 0.0
     ema_decay: float = 0.0
-    ts_config: Optional[TimeSeriesConfig] = None
-    aggregation: Optional[str] = None
-    aggregation_config: Optional[Dict[str, Any]] = None
-    ts_label_collator_config: Optional[Dict[str, Any]] = None
     model_config: Optional[Dict[str, Any]] = None
     metrics: Union[str, List[str]] = "auto"
     metric_config: Optional[Dict[str, Any]] = None
@@ -141,14 +141,13 @@ class Elements(NamedTuple):
     optimizer_config: Optional[Dict[str, Any]] = None
     scheduler_config: Optional[Dict[str, Any]] = None
     optimizers: Optional[Dict[str, Any]] = None
-    trigger_logging: bool = False
-    trial: Optional[Trial] = None
-    tracker_config: Optional[Dict[str, Any]] = None
-    cuda: Optional[Union[int, str]] = None
     verbose_level: int = 2
-    use_timing_context: bool = True
     use_tqdm: bool = True
+    trigger_logging: bool = False
+    cuda: Optional[Union[int, str]] = None
+    tracker_config: Optional[Dict[str, Any]] = None
     extra_config: Optional[Dict[str, Any]] = None
+    user_defined_config: Optional[Dict[str, Any]] = None
 ```
 
 + **`model`** [default = `"fcnn"`]
@@ -156,13 +155,21 @@ class Elements(NamedTuple):
     + Currently `carefree-learn` supports:
         + `"linear"`, `"fcnn"`, `"wnd"`, `"nnb"`, `"ndt"`, `"tree_linear"`, `"tree_stack"`, `"tree_dnn"` and `"ddr"` for basic usages.
         + `"rnn"` and `"transformer"` for time series usages.
++ **`data_config`** [default = `{}`]
+    + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
 + **`task_type`** [default = `None`]
     + Specify the task type.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
 + **`use_simplify_data`** [default = `False`]
     + Specify whether use a simplified `TabularData` (without any pre-processing).
-+ **`data_config`** [default = `{}`]
-    + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
++ **`ts_config`** [default = `None`]
+    + Specify the time series config (experimental).
++ **`aggregation`** [default = `None`]
+    + Specify the aggregation used in time series tasks (experimental).
++ **`aggregation_config`** [default = `None`]
+    + Specify the configuration of aggregation used in time series tasks (experimental).
++ **`ts_label_collator_config`** [default = `None`]
+    + Specify the configuration of the label collator used in time series tasks (experimental).
 + **`delim`** [default = `None`]
     + Specify the delimiter of the dataset file.
         + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
@@ -173,6 +180,12 @@ class Elements(NamedTuple):
     + Only take effects when we are using file datasets.
 + **`read_config`** [default = `{}`]
     + kwargs used in [`cfdata.tabular.TabularData.read`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L769).
++ **`logging_folder`** [default = `None`]
+    + Specify the logging folder.
+    + If not provided, `carefree-learn` will try to inference it automatically.
++ **`logging_file`** [default = `None`]
+    + Specify the logging file.
+    + If not provided, `carefree-learn` will try to inference it automatically.
 + **`batch_size`** [default = `128`]
     + Specify the number of samples in each batch.
 + **`cv_split`** [default = `None`]
@@ -181,12 +194,6 @@ class Elements(NamedTuple):
         + If `cv_split > 1`, it will be the exact 'size'.
         + If `cv_split == 1`, `cv_split == "ratio" if isinstance(cv_split, float) else "size"`
     + If not provided, `carefree-learn` will try to inference it with `min_cv_split`, `max_cv_split` and `max_cv_split_ratio`. See [cv_split](#cv_split) for more details.
-+ **`logging_folder`** [default = `None`]
-    + Specify the logging folder.
-    + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`logging_file`** [default = `None`]
-    + Specify the logging file.
-    + If not provided, `carefree-learn` will try to inference it automatically.
 + **`use_amp`** [default = `False`]
     + Specify whether use the [`amp`](https://pytorch.org/docs/stable/amp.html) technique or not.
 + **`min_epoch`** [default = `0`]
@@ -207,14 +214,6 @@ class Elements(NamedTuple):
 + **`ema_decay`** [default = `0.0`]
     + When training a model, it is often beneficial to maintain **E**xponential **M**oving **A**verages with a certain decay rate (**`ema_decay`**) of the trained parameters. Evaluations that use averaged parameters sometimes produce significantly better results than the final trained values.
     + If `0.0`, then no EMA will be used.
-+ **`ts_config`** [default = `None`]
-    + Specify the time series config (experimental).
-+ **`aggregation`** [default = `None`]
-    + Specify the aggregation used in time series tasks (experimental).
-+ **`aggregation_config`** [default = `None`]
-    + Specify the configuration of aggregation used in time series tasks (experimental).
-+ **`ts_label_collator_config`** [default = `None`]
-    + Specify the configuration of the label collator used in time series tasks (experimental).
 + **`model_config`** [default = `{}`]
     + Configurations used in [`Model`](../design-principles#model).
 + **`metrics`** [default = `"auto"`]
@@ -231,24 +230,22 @@ class Elements(NamedTuple):
     + Specify scheduler's configuration.
 + **`optimizers`** [default = `{}`]
     + Specify the fine grained configurations of optimizers and schedulers. See [`optimizers`](#optimizers) for more details.
++ **`verbose_level`** [default = `2`]
+    + Specify the verbose level.
++ **`use_tqdm`** [default = `True`]
+    + Whether utilize the `tqdm` progress bar or not.
 + **`trigger_logging`** [default = `False`]
     + Whether log messages into a log file.
-+ **`trial`** [default = `None`]
-    + `optuna.trial.Trial`, should not be set manually because this argument should only be set in `cflearn.optuna_tune` internally.
-+ **`tracker_config`** [default = `None`]
-    + Specify the configuration of `cftool.ml.Tracker`.
-    + If `None`, then `Tracker` will not be used.
 + **`cuda`** [default = `None`]
     + Specify the working GPU.
     + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`verbose_level`** [default = `2`]
-    + Specify the verbose level.
-+ **`use_timing_context`** [default = `True`]
-    + Whether utilize the `timing_context` or not.
-+ **`use_tqdm`** [default = `True`]
-    + Whether utilize the `tqdm` progress bar or not.
++ **`tracker_config`** [default = `None`]
+    + Specify the configuration of `cftool.ml.Tracker`.
+    + If `None`, then `Tracker` will not be used.
 + **`extra_config`** [default = `{}`]
     + Other configurations.
++ **`user_defined_config`** [default = `{}`]
+    + User defined configurations.
 
 ### make
 
@@ -257,7 +254,26 @@ In order to provide out of the box tools, `carefree-learn` implements high level
 ```python
 def make(model: str = "fcnn", **kwargs: Any) -> Pipeline:
     kwargs["model"] = model
-    return Pipeline(Environment.from_elements(Elements.make(kwargs)))
+    return Pipeline.make(kwargs)
+```
+
+Notice that we've used `Pipeline.make`, whose definition is:
+
+```python
+@classmethod
+def make(cls, config: Dict[str, Any]) -> "Pipeline":
+    return cls(Environment.from_elements(Elements.make(config)))
+```
+
+The reason why we introduce the `make` API is that we hope we can provide APIs as *carefree* as possible. So we've listed the most commonly used configurations in `Elements`, and supported users to specify them through `kwargs` (which is the most intuitive way) in `make`.
+
+For example, if we want to switch our device to `"cpu"`, we can simply:
+
+```python
+import cflearn
+
+m = cflearn.make(cuda="cpu")
+print(m.device)  # cpu
 ```
 
 
