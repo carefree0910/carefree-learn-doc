@@ -3,6 +3,7 @@ id: distributed
 title: Distributed
 ---
 
+
 ## Distributed Training
 
 In `carefree-learn`, **Distributed Training** doesn't mean training your model on multiple GPUs or multiple machines, because `carefree-learn` focuses on tabular datasets (or, structured datasets) which are often not as large as unstructured datasets. Instead, **Distributed Training** in `carefree-learn` means **training multiple models** at the same time. This is important because:
@@ -15,7 +16,6 @@ In `carefree-learn`, **Distributed Training** doesn't mean training your model o
 import cflearn
 from cfdata.tabular import TabularDataset
 
-# It is necessary to wrap codes under '__main__' on WINDOWS platform when running distributed codes
 if __name__ == '__main__':
     x, y = TabularDataset.iris().xy
     # Notice that 3 fcnn were trained simultaneously with this line of code
@@ -27,7 +27,11 @@ if __name__ == '__main__':
     cflearn.evaluate(x, y, metrics=["acc", "auc"], other_patterns=patterns_dict)
 ```
 
-Then you will see something like this:
+:::note
+It is necessary to wrap codes under `__main__` on WINDOWS when running distributed codes.
+:::
+
+Which yields:
 
 ```text
 ================================================================================================================================
@@ -41,9 +45,58 @@ Then you will see something like this:
 ================================================================================================================================
 ```
 
-:::note
-You might notice that the best results of each column is 'highlighted' with a pair of '--'.
+:::info
+You might notice that the best results of each column is highlighted with a pair of '--'.
 :::
+
+
+## Benchmarking
+
+`carefree-learn` has a related repository (namely [`carefree-learn-benchmark`](https://github.com/carefree0910/carefree-learn-benchmark)) which implemented some sophisticated benchmarking functionalities. However, for many common use cases, `carefree-learn` provides `cflearn.repeat_with` and `cflearn.evaluate` for quick benchmarking. For example, if we want to compare the `linear` model and the `fcnn` model by running them `3` times, we can simply:
+
+```python
+import cflearn
+import numpy as np
+
+x = np.random.random([1000, 10])
+y = np.random.random([1000, 1])
+result = cflearn.repeat_with(x, y, models=["linear", "fcnn"], num_repeat=3)
+cflearn.evaluate(x, y, pipelines=result.pipelines)
+```
+
+Which yields
+
+```text
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|          fcnn          | -- 0.251717 -- | -- 0.002158 -- | -- -0.25387 -- | -- 0.086110 -- | -- 0.002165 -- | -- -0.08827 -- |
+--------------------------------------------------------------------------------------------------------------------------------
+|         linear         |    0.283154    |    0.015341    |    -0.29849    |    0.118122    |    0.016185    |    -0.13430    |
+================================================================================================================================
+```
+
+We can also leverage distributed training supported in `carefree-learn` for faster benchmarking by specifying `num_jobs` to a higher value:
+
+```python
+if __name__ == "__main__":
+    result = cflearn.repeat_with(x, y, models=["linear", "fcnn"], num_repeat=3, num_jobs=2)
+    cflearn.evaluate(x, y, pipelines=result.pipelines)
+```
+
+:::caution
+It is not recommended to enable distributed training unless:
++ There are plenty of tasks that we need to run. 
++ Running each task is quite costly in time.
++ `num_jobs` could be set to a relatively high value (e.g., `8`).
+
+Otherwise the overhead brought by launching distributed training might actually hurt the overall performance.
+
+However, there are no 'golden rules' of whether we should use distributed training or not for us to follow, so the best practice is to actually try it out in a smaller scale 🤣
+:::
+
 
 ## Hyper Parameter Optimization (HPO)
 
