@@ -134,6 +134,8 @@ class Elements(NamedTuple):
     clip_norm: float = 0.0
     ema_decay: float = 0.0
     model_config: Optional[Dict[str, Any]] = None
+    loss: str = "auto"
+    loss_config: Optional[Dict[str, Any]] = None
     metrics: Union[str, List[str]] = "auto"
     metric_config: Optional[Dict[str, Any]] = None
     optimizer: Optional[str] = None
@@ -216,6 +218,11 @@ class Elements(NamedTuple):
     + If `0.0`, then no EMA will be used.
 + **`model_config`** [default = `{}`]
     + Configurations used in [`Model`](../design-principles#model).
++ **`loss`** [default = `"auto"`]
+    + Loss that we'll use for training.
+    + Currently `carefree-learn` supports `mae`, `mse`, `quantile`, `cross_entropy`, `label_smooth_cross_entropy` and `focal`.
++ **`loss_config`** [default = `None`]
+    + Configurations of the corresponding loss.
 + **`metrics`** [default = `"auto"`]
     + Specify which metric(s) are we going to use to monitor our training process
 + **`metric_config`** [default = `{}`]
