@@ -109,3 +109,24 @@ Of course, loading `carefree-learn` models are easy too!
 m = cflearn.load()
 print(m)  # {'fcnn': FCNN()}
 ```
+
+
+## Visualizing
+
+`carefree-learn` also supports visualizing the model with `draw` API:
+
+```python
+import cflearn
+
+cflearn.make("wnd").draw("wnd.png", transparent=False)
+```
+
+:::tip
+You might notice that we don't need to train our model before we visualize it.
+:::
+
+This will generate a `wnd.png` file in the current working directory (click to zoom in):
+
+[ ![Wide and Deep](../../static/img/pipes/wnd.png) ](../../static/img/pipes/wnd.png)
+
+If we need to generate image with transparent background, simply use `.draw("wnd.png")` and you'll get one (because `transparent` is set to `True` by default).

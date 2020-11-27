@@ -243,10 +243,13 @@ These logics simplify the definitions of some common structures, so in `carefree
 For the `key` itself, we only need to guarantee that different [pipe](../design-principles#pipe) corresponds to different `key`.
 :::
 
-At the last part of this section, we will demonstrate how could we build a new model with following properties:
+### Example
+
+In this section, we will demonstrate how could we build a new model with following properties:
 
 + Use one hot features to train a `DNDF` `head`.
 + Use one hot features and numerical features to train a `linear` `head`.
++ Use numerical features to train a `linear` `head`.
 + Use numerical features to train an `fcnn` `head`.
 + Use embedding features to train an `fcnn` `head`.
 
@@ -258,13 +261,18 @@ cflearn.register_model(
     pipes=[
         cflearn.PipeInfo("dndf", transform="one_hot_only"),
         cflearn.PipeInfo("linear", transform="one_hot"),
+        cflearn.PipeInfo("linear2", transform="numerical", extractor="identity", head="linear"),
         cflearn.PipeInfo("fcnn", transform="numerical"),
         cflearn.PipeInfo("fcnn2", transform="embedding_only", extractor="identity", head="fcnn"),
     ]
 )
 ```
 
-We can actually play with it:
+We can actually visualize it with [`draw`](../getting-started/quick-start#visualizing) API (click to zoom in):
+
+[ ![Brand New Model](../../static/img/pipes/brand_new_model.png) ](../../static/img/pipes/brand_new_model.png)
+
+And can also play with it:
 
 ```python
 import numpy as np
@@ -285,10 +293,11 @@ _(
   (pipes): Pipes(
     (dndf): one_hot_only_identity_default -> dndf_default
     (linear): one_hot_identity_default -> linear_default
+    (linear2): numerical_identity_default -> linear_default
     (fcnn): numerical_identity_default -> fcnn_default
     (fcnn2): embedding_only_identity_default -> fcnn_default
   )
-  (loss): L1Loss()
+  (loss): MAELoss()
   (encoder): Encoder(
     (embeddings): ModuleList(
       (0): Embedding(
@@ -354,6 +363,11 @@ _(
     (linear): LinearHead(
       (linear): Linear(
         (linear): Linear(in_features=55, out_features=1, bias=True)
+      )
+    )
+    (linear2): LinearHead(
+      (linear): Linear(
+        (linear): Linear(in_features=5, out_features=1, bias=True)
       )
     )
     (fcnn): FCNNHead(

@@ -49,9 +49,9 @@ One thing we would like to proudly announce is that `carefree-learn` has made an
 
 ### `pipe`
 
-Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`, extract some features with `extractor`, and then feed the final network (`head`) with these features. Here's an example:
+Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`, extract some features with `extractor`, and then feed the final network (`head`) with these features. Here's an example (click to zoom in):
 
-![Pipe](../static/img/pipe.png)
+[ ![Pipe](../static/img/pipe.png) ](../static/img/pipe.png)
 
 In this model, we have $3$ `pipe`s. The first `pipe` takes in $x_1, x_2$, the second one takes in $x_3$, and the third one takes in $x_3, x_4$. After each `head` finishes its own calculation, we'll go through a `reduce` operation (which is often a `sum`) to get the final outputs.
 
@@ -162,7 +162,7 @@ The terminology `head` actually borrows from CV models where they call the last 
 
 ### Examples
 
-In this section we'll show how `carefree-learn` implements models under the `pipe` design:
+In this section we'll show how `carefree-learn` implements models under the `pipe` design, and will visualize these implementations with [`draw`](getting-started/quick-start#visualizing) API as well (click to zoom in):
 
 <Tabs
   groupId="models"
@@ -183,6 +183,8 @@ class LinearModel(ModelBase):
     pass
 ```
 
+[ ![Linear](../static/img/pipes/linear.png) ](../static/img/pipes/linear.png)
+
 </TabItem>
 <TabItem value="fcnn">
 
@@ -191,6 +193,8 @@ class LinearModel(ModelBase):
 class FCNN(ModelBase):
     pass
 ```
+
+[ ![FCNN](../static/img/pipes/fcnn.png) ](../static/img/pipes/fcnn.png)
 
 </TabItem>
 <TabItem value="wnd">
@@ -202,6 +206,8 @@ class WideAndDeep(ModelBase):
     pass
 ```
 
+[ ![Wide and Deep](../static/img/pipes/wnd.png) ](../static/img/pipes/wnd.png)
+
 </TabItem>
 <TabItem value="rnn">
 
@@ -211,6 +217,8 @@ class RNN(ModelBase):
     pass
 ```
 
+[ ![RNN](../static/img/pipes/rnn.png) ](../static/img/pipes/rnn.png)
+
 </TabItem>
 <TabItem value="transformer">
 
@@ -219,6 +227,8 @@ class RNN(ModelBase):
 class Transformer(ModelBase):
     pass
 ```
+
+[ ![Transformer](../static/img/pipes/transformer.png) ](../static/img/pipes/transformer.png)
 
 </TabItem>
 </Tabs>
