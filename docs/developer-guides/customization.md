@@ -105,6 +105,120 @@ A `HeadConfigs` inherits from `Configs` and holds more information. The reason w
 We need to call `cflearn.register_head_config` if we want to register a new `HeadConfigs`.
 :::
 
+### Meta Configs
+
+In some corner cases, we might need to
++ Depend one config to another.
++ Construct multiple configs simultaneously.
+
+where `Meta Configs` will come to rescue. In `carefree-learn`, we leveraged `Meta Configs` to implement the `Neural Naive Bayes` model as shown [here](https://github.com/carefree0910/carefree-learn/blob/78d4b2f9f657139dabc5260decf6f73be30d5dd7/cflearn/models/nnb.py#L19-L29).
+
+:::note
+Similar to `metaclass` in Python, `Meta Configs` here is some kind of *black magic* and prones to be buggy. It is not recommended to be used unless we have to.
+:::
+
+Constructing `Meta Configs` itself has no differences with constructing normal configs, and the magic part comes to where you utilize it. For example, if we need to spend lots of time to train a model before we generate two configs that need different properties of this model:
+
+```python
+model = train()  # this will cost lots of time
+config1 = {"foo": model.foo}
+config2 = {"bar": model.bar}
+```
+
+We surely don't want to train the model over and over again when we are construting the configs, and that's exactly where `Meta Configs` can help us. Instead of:
+
+```python
+@cflearn.register_config("config1")
+class Config1(cflearn.Configs):
+    def get_default(self):
+        model = train()
+        return {"foo": model.foo}
+
+@cflearn.register_config("config2")
+class Config2(cflearn.Configs):
+    def get_default(self):
+        model = train()
+        return {"bar": model.bar}
+```
+
+`Meta Configs` constructs configs as follows:
+
+```python
+@cflearn.register_config("meta_config")
+class MetaConfig(cflearn.Configs):
+    def get_default(self):
+        model = train()
+        return {
+            "config1": {"foo": model.foo},
+            "config2": {"bar": model.bar},
+        }
+```
+
+In this way, we can prevent from calling `train()` twice.
+
+### Example
+
+In this section, we'll show you how to utilize `Meta Configs` with a runnable example. This example does not have any practical value, but can well illustrate the concepts mentioned above.
+
+:::note
+For examples on how to customize [HeadConfigs](#headconfigs), please refer to the [Customize `head`](#customize-head) section.
+:::
+
+```python
+import cflearn
+import numpy as np
+from sklearn.svm import SVR
+from cflearn.modules.extractors import Identity
+
+x = np.random.random([10 ** 4, 3])
+y = np.random.random([10 ** 4, 1])
+
+@cflearn.register_config("svr_meta", "default")
+class SVRMetaConfig(cflearn.Configs):
+    def get_default(self):
+        svr = SVR().fit(x, y.ravel())
+        return {
+            "support": {"data": ("support", svr.support_)},
+            "intercept": {"data": ("intercept", svr.intercept_)},
+        }
+
+
+@cflearn.register_extractor("support")
+class Support(Identity):
+    def __init__(self, in_flat_dim, dimensions, **kwargs):
+        # kwargs == svr_meta["support"]
+        super().__init__(in_flat_dim, dimensions, **kwargs)
+        # so kwargs["data"] == ("support", svr.support_)
+        print(kwargs["data"])
+
+
+@cflearn.register_extractor("intercept")
+class Intercept(Identity):
+    def __init__(self, in_flat_dim, dimensions, **kwargs):
+        # kwargs == svr_meta["intercept"]
+        super().__init__(in_flat_dim, dimensions, **kwargs)
+        # so kwargs["data"] == ("intercept", svr.intercept_)
+        print(kwargs["data"])
+
+
+cflearn.register_model(
+    "test_svr",
+    pipes=[
+        cflearn.PipeInfo("support", extractor_meta_scope="svr_meta", head="linear"),
+        cflearn.PipeInfo("intercept", extractor_meta_scope="svr_meta", head="linear"),
+    ]
+)
+
+cflearn.make("test_svr").fit(x, y)
+```
+
+Which yields
+
+```text
+('support', array([   0,    1,    2, ..., 9996, 9997, 9998]))
+('intercept', array([0.45095548]))
+```
+
 
 ## Constructing Existing Modules
 
