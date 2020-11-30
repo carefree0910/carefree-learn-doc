@@ -318,11 +318,12 @@ with torch.no_grad():
 print(param)  # tensor([1., 1., 1.], requires_grad=True)
 ```
 
-Currently we mainly have 9 registrations in use:
+Currently we mainly have 10 kinds of registrations in use:
 + [`register_model`](developer-guides/customization#constructing-existing-modules)
 + [`register_pipe`](developer-guides/customization#constructing-existing-modules)
-+ [`register_head`](developer-guides/customization#customize-head)
 + [`register_extractor`](developer-guides/customization#customize-extractor)
++ [`register_head`](developer-guides/customization#customize-head)
++ [`register_aggregator`](developer-guides/customization#customizing-new-aggregators)
 + [`register_config`](developer-guides/customization#configs)
 + [`register_head_config`](developer-guides/customization#headconfigs)
 + `register_metric`

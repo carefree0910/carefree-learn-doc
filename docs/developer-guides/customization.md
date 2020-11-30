@@ -161,7 +161,8 @@ In this way, we can prevent from calling `train()` twice.
 In this section, we'll show you how to utilize `Meta Configs` with a runnable example. This example does not have any practical value, but can well illustrate the concepts mentioned above.
 
 :::note
-For examples on how to customize [HeadConfigs](#headconfigs), please refer to the [Customize `head`](#customize-head) section.
++ For examples on how to customize [HeadConfigs](#headconfigs), please refer to the [Customize `head`](#customize-head) section.
++ For details of `register_extractor` and `register_model`, please refer to [Customize `extractor`](#customize-extractor) and [`register_model`](#register_model) respectively.
 :::
 
 ```python
@@ -290,18 +291,64 @@ class Transformer(ModelBase):
 
 ### `register_model`
 
-In `carefree-learn` we implemented an alias for `ModelBase.register`:
+In `carefree-learn` we implemented an alias for `ModelBase.register`, which is often utilized together with [`register_pipe`](#register_pipe):
 
 ```python
-def register_model(name: str) -> Callable[[Type], Type]:
-    return ModelBase.register(name)
+def register_model(
+    name: str,
+    *,
+    pipes: Optional[List[PipeInfo]] = None,
+) -> Optional[Callable[[Type], Type]]:
+    if pipes is None:
+        return ModelBase.register(name)
+
+    @ModelBase.register(name)
+    class _(ModelBase):
+        pass
+
+    for pipe in pipes:
+        _ = register_pipe(
+            pipe.key,
+            transform=pipe.transform,
+            extractor=pipe.extractor,
+            head=pipe.head,
+            extractor_config=pipe.extractor_config,
+            head_config=pipe.head_config,
+            extractor_meta_scope=pipe.extractor_meta_scope,
+            head_meta_scope=pipe.head_meta_scope,
+        )(_)
+
+    return None
 ```
 
 It can be used to register a new model and access it through its name, which is very convenient in many use cases (e.g. hyper parameter optimization).
 
+It's worth mentioning that this API could be utilized either in the OOP form:
+
+```python
+import cflearn
+
+@cflearn.register_model("my_own_linear")
+@cflearn.register_pipe("linear")
+class MyOwnLinear(cflearn.ModelBase):
+    pass
+```
+
+or in the functional form:
+
+```python
+import cflearn
+
+cflearn.register_model("my_own_linear", pipes=[cflearn.PipeInfo("linear")])
+```
+
+:::info
+In most cases the functional form is enough and easier to use, but the OOP form provides more flexibilities and can satisfy special needs.
+:::
+
 ### `register_pipe`
 
-In `carefree-learn` we implemented an alias for `ModelBase.register_pipe`:
+In `carefree-learn` we implemented an alias for `ModelBase.register_pipe`, which is often utilized together with [`register_model`](#register_model):
 
 ```python
 def register_pipe(
@@ -335,12 +382,17 @@ extractor_cfg = cflearn.Configs.get(extractor, extractor_config)
 head_cfg = cflearn.HeadConfigs.get(head, head_config)
 ```
 
-:::note
-+ There is only one `scope` for `transform` because the number of choices of `transform` is limited (see [transform](../design-principles#transform) for more details).
-+ We are using `cflearn.HeadConfigs` to fetch configurations for `head`, as mentioned in [HeadConfigs](#headconfigs) section.
+:::info
+There is only one `scope` for `transform` because the number of choices of `transform` is limited (see [transform](../design-principles#transform) for more details).
 :::
 
-Besides these, there still remains a `key` argument in `register_pipe` and this is where many default logics hide under the hood:
+You may have noticed that there exists an `extractor_meta_scope` kwarg and a `head_meta_scope` kwarg, and they are where the [`Meta Configs`](#meta-configs) mechanism takes place.
+
+:::note
+Please refer to this [Example](#example) for more details.
+:::
+
+Besides these, there still remains a `key` argument in `register_pipe`, and this is where many default logics hide under the hood:
 
 ```python
 if head is None:
@@ -351,10 +403,10 @@ if extractor is None:
     extractor = "identity"
 ```
 
-These logics simplify the definitions of some common structures, so in `carefree-learn` we only care about the `key` argument in most cases.
+These logics simplify the definitions of some common structures, so in `carefree-learn` we only need to care about the `key` argument in most cases.
 
 :::tip
-For the `key` itself, we only need to guarantee that different [pipe](../design-principles#pipe) corresponds to different `key`.
+For the `key` itself, the only constraint is that different [pipe](../design-principles#pipe) should correspond to different `key`.
 :::
 
 ### Example
@@ -746,7 +798,55 @@ The above two sections showed us how to customize our own `extractor` and `head`
 
 ## Customizing New Aggregators
 
-In this section, we'll introduce how to customize your own [`Aggregator`](../design-principles#aggregator).
+In this section, we'll introduce how to customize your own [`Aggregator`](../design-principles#aggregator). Although we have already done many experiments across different datasets and finds out that a simple `sum` operation is quite enough for most cases, `carefree-learn` yet supports registering new aggregator for special needs (with the help of `cflearn.register_aggregator`).
+
+In fact, if you have read over the previous section, you may notice that we can solve the *actual income* task with a custom [`Aggregator`](../design-principles#aggregator) - the `Prod` aggregator:
+
+```python
+import cflearn
+
+@cflearn.register_aggregator("prod")
+class Prod(cflearn.AggregatorBase):
+    def reduce(self, outputs, **kwargs):
+        return {"predictions": outputs["linear"] * outputs["linear2"]}
+
+cflearn.register_model(
+    "prod",
+    pipes=[
+        cflearn.PipeInfo("linear"),
+        cflearn.PipeInfo("linear2", extractor="identity", head="linear")
+    ]
+)
+```
+
+Here, we've defined two [`pipe`](../design-principles#pipe) with `linear` head, then we aggregate them with a `multiply` operation to get our final output. Since the ground truth ($y=t\times x$) is as well a `multiply` operation between features, this design should be able to achieve great performance. We can run the experiment mentioned in previous section to demonstrate it:
+
+```python
+import numpy as np
+
+x = np.random.random([10000, 2]) * 2.0
+y = np.prod(x, axis=1, keepdims=True)
+
+# `reg` represents a regression task
+# `use_simplify_data` indicates that `carefree-learn` will do nothing to the input data
+kwargs = {"task_type": "reg", "use_simplify_data": True}
+prod = cflearn.make("prod", aggregator="prod", **kwargs).fit(x, y)
+cflearn.evaluate(x, y, pipelines=prod)
+```
+
+Which yields
+
+```text
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|          prod          |    0.000345    |    0.000000    |    -0.00034    |    0.000000    |    0.000000    |    -0.00000    |
+================================================================================================================================
+```
+
+As we expected, the `prod` model with `prod` aggregator approaches to the ground truth🥳
 
 
 ## Customizing New Losses
