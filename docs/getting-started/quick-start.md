@@ -110,6 +110,10 @@ m = cflearn.load()
 print(m)  # {'fcnn': FCNN()}
 ```
 
+:::note
+Please refer to the [Production](../user-guides/production) section for production usages.
+:::
+
 
 ## Visualizing
 
