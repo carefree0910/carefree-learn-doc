@@ -33,6 +33,13 @@ Although some efforts have been made to replace the `Mapping` Layers (e.g. DNDF[
 Recall that `carefree-learn` focuses on tabular datasets, which means `carefree-learn` will use `Mapping` Layers in most cases (Unlike CNN or RNN which has Convolutional Blocks and RNNCell Blocks respectively). In this case, it is necessary to wrap multiple `Mapping`s into one single Module - also well known as `MLP` - in `carefree-learn`. So, in CNN we have `Conv2D`, in RNN we have `LSTM`, and in `carefree-learn` we have `MLP`.
 
 
+## Configurations
+
+> Source code: [configs.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/configs.py).
+
+`carefree-learn` manages configurations in an elegant way so both [specifying configurations](getting-started/configurations#specify-configurations) and [customizing configurations](developer-guides/customization#configs) could be easy.
+
+
 ## Model
 
 > Source code: [`ModelBase`](https://github.com/carefree0910/carefree-learn/blob/ecdae9702456910b5075d1972de66a4f64ea733a/cflearn/models/base.py#L87).

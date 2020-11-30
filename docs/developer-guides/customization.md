@@ -20,10 +20,10 @@ In order to better understand the following contents, it is recommended to first
 
 ## `Configs`
 
-Before we dive into the details of customization, we should first understand how `carefree-learn` manages its `Configs`. It is actually not more than an ordinary Python `dict`, except it can be *registered* in a certain *hierarchy* format. Basically, a `Configs` need to define a `scope` and a `name` for users to access it, where
+Before we dive into the details of customization, we should first understand how `carefree-learn` manages its `Configs`. It is actually not more than an ordinary Python `dict`, except it can be *registered* in a certain *hierarchy* format. Basically, a `Configs` needs to define a `scope` and a `name` for users to access it, where
 
-+ A `scope` represents a `module`. 
-+ A `name` represents the different `version` of the corresponding configuration.
++ A `scope` represents a module / block / class. 
++ A `name` represents the different `version` of the configurations of the corresponding `scope`.
 
 For example, if we want to configure a `module` named `Foo` with different `dummy_value`:
 
@@ -44,10 +44,6 @@ import cflearn
 cflearn.register_config("foo", "one", config={"dummy_value": 1.0})
 cflearn.register_config("foo", "two", config={"dummy_value": 2.0})
 ```
-
-:::info
-Notice that we've implemented `get_default` for each class, which is the only necessary method we need to inherit from `Configs`.
-:::
 
 After registration, we can access them through their names, which is very convenient in many use cases (e.g. hyper parameter optimization):
 
