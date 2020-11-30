@@ -13,13 +13,14 @@ import TabItem from '@theme/TabItem';
 
 In `carefree-learn`, there are five main design principles that address this tension together:
 
-+ Share configurations with the help of `Environment` (see [`Configurations`](getting-started/configurations#environment)).
-+ Build some common blocks which shall be leveraged across different models (see [`Common Blocks`](#common-blocks)).
-+ Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline), each focuses on certain roles.
-+ Divide `Model` into three parts: [`transform`](#transform), [`extractor`](#extractor) and [`head`](#head), each focuses on one part of a [`pipe`](#pipe)
++ Share configurations with the help of `Environment` (see [`Configurations`](getting-started/configurations)).
++ Build some [`Common Blocks`](#common-blocks) which shall be leveraged across different models.
++ Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline).
++ Divide `Model` into three parts: [`transform`](#transform), [`extractor`](#extractor) and [`head`](#head), which form a [`pipe`](#pipe).
 + Implemente functions (`cflearn.register_*` to be exact) to ensure flexibility and control on different modules and stuffs (see [`Registration`](#registration)).
 
 We will introduce the details in the following subsections.
+
 
 ## Common Blocks
 
@@ -30,6 +31,7 @@ Commonality is important for abstractions. When it comes to deep learning, it is
 Although some efforts have been made to replace the `Mapping` Layers (e.g. DNDF[^1]), it is undeniable that the `Mapping` Layers should be extracted as a stand-alone module before any other structures. But in `carefree-learn`, we should do more than that.
 
 Recall that `carefree-learn` focuses on tabular datasets, which means `carefree-learn` will use `Mapping` Layers in most cases (Unlike CNN or RNN which has Convolutional Blocks and RNNCell Blocks respectively). In this case, it is necessary to wrap multiple `Mapping`s into one single Module - also well known as `MLP` - in `carefree-learn`. So, in CNN we have `Conv2D`, in RNN we have `LSTM`, and in `carefree-learn` we have `MLP`.
+
 
 ## Model
 
@@ -53,7 +55,7 @@ Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowl
 
 [ ![Pipe](../static/img/pipe.png) ](../static/img/pipe.png)
 
-In this model, we have $3$ `pipe`s. The first `pipe` takes in $x_1, x_2$, the second one takes in $x_3$, and the third one takes in $x_3, x_4$. After each `head` finishes its own calculation, we'll go through a `reduce` operation (which is often a `sum`) to get the final outputs.
+In this model, we have $3$ `pipe`s. The first `pipe` takes in $x_1, x_2$, the second one takes in $x_3$, and the third one takes in $x_3, x_4$. After each `head` finishes its own calculation, we'll go through a `reduce` operation (which is often a `sum`, see [`Aggregator`](#aggregator) for more details) to get the final outputs.
 
 Here are some examples of how to represent different structures with `pipe`:
 
@@ -236,7 +238,37 @@ class Transformer(ModelBase):
 ...That's right, simply register your `transform`, `extractor` and `head`, then `carefree-learn` will handle the rest for you🥳
 
 :::note
-For detailed development guides, please refer to [Build Your Own Models](developer-guides/customization).
++ For the Aggregator part, please refer to the next section.
++ For detailed development guides, please refer to [Build Your Own Models](developer-guides/customization).
+:::
+
+
+## Aggregator
+
+You may have noticed that the visualizations shown above contain an `Aggregator` part. For models with only one [`pipe`](#pipe), the `Aggregator` will just simply output its input. But for models with more than one [`pipe`](#pipe) (e.g. the Wide & Deep model), `Aggregator` will be responsible to aggregate the outputs from different [`pipe`](#pipe). Take this example again (click to zoom in):
+
+[ ![Pipe](../static/img/pipe.png) ](../static/img/pipe.png)
+
+The `Aggregator` actually needs to implement the `Reduce` part as shown at the right-most of the image. As we've mentioned, this is often a `sum` operation, which is exactly what `carefree-learn` has implemented for us:
+
+```python
+@AggregatorBase.register("sum")
+class Sum(AggregatorBase):
+    def reduce(self, outputs: tensor_dict_type, **kwargs: Any) -> tensor_dict_type:
+        values = list(outputs.values())
+        output = None
+        for value in values:
+            if value is None:
+                continue
+            if output is None:
+                output = value
+            else:
+                output = output + value
+        return {"predictions": output}
+```
+
+:::note
+For detailed development guides, please refer to [Customizing New Aggregators](developer-guides/customization#customizing-new-aggregators).
 :::
 
 
@@ -248,6 +280,7 @@ In `carefree-learn`, a `Trainer` should implement the training parts, as listed 
 
 + It assumes that the input data is already *processed, nice and clean*, but it should take care of getting input data into batches, because in real applications batching is essential for performance.
 + It should take care of the training loop, which includes updating parameters with an optimizer, verbosing metrics, checkpointing, early stopping, logging, etc.
+
 
 ## Pipeline
 
@@ -261,6 +294,7 @@ In `carefree-learn`, a `Pipeline` should implement the high-level parts.
     + Processing numerical columns.
     + Processing label column (if needed).
 + It should implement some algorithm-agnostic functions (e.g. `predict`, `save`, `load`, etc.).
+
 
 ## Registration
 
@@ -284,9 +318,16 @@ with torch.no_grad():
 print(param)  # tensor([1., 1., 1.], requires_grad=True)
 ```
 
-:::info
-Currently we mainly have 9 registrations in use: `register_pipe`, `register_head`, `register_extractor`, `register_model`, `register_config`, `register_head_config`, `register_metric`, `register_initializer` and `register_processor`
-:::
+Currently we mainly have 9 registrations in use:
++ [`register_model`](developer-guides/customization#constructing-existing-modules)
++ [`register_pipe`](developer-guides/customization#constructing-existing-modules)
++ [`register_head`](developer-guides/customization#customize-head)
++ [`register_extractor`](developer-guides/customization#customize-extractor)
++ [`register_config`](developer-guides/customization#configs)
++ [`register_head_config`](developer-guides/customization#headconfigs)
++ `register_metric`
++ `register_initializer`
++ `register_processor`
 
 
 [^1]: Kontschieder P, Fiterau M, Criminisi A, et al. Deep neural decision forests[C]//Proceedings of the IEEE international conference on computer vision. 2015: 1467-1475. 

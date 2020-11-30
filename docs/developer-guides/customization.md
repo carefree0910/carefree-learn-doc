@@ -288,7 +288,7 @@ class Transformer(ModelBase):
 </TabItem>
 </Tabs>
 
-### `ModelBase.register`
+### `register_model`
 
 In `carefree-learn` we implemented an alias for `ModelBase.register`:
 
@@ -299,7 +299,7 @@ def register_model(name: str) -> Callable[[Type], Type]:
 
 It can be used to register a new model and access it through its name, which is very convenient in many use cases (e.g. hyper parameter optimization).
 
-### `ModelBase.register_pipe`
+### `register_pipe`
 
 In `carefree-learn` we implemented an alias for `ModelBase.register_pipe`:
 
@@ -600,7 +600,7 @@ Which yields
 ================================================================================================================================
 ```
 
-We can see that `fcnn` failed to approach to the ground truth. In order to improve this, we can implement an `extractor` to generate a new feature representing cross-feature multiplication:
+We can see that `fcnn` failed to approach to the ground truth. In order to improve this, we can implement an `extractor` to generate a new feature representing cross-feature multiplication (with the help of `cflearn.register_extractor`):
 
 ```python
 import torch
@@ -668,7 +668,7 @@ Although the result is satisfying, in most real-life cases it is hard to obtain 
 
 ![Cross Layer](../../static/img/publications/cross-layer.png)
 
-Since `carefree-learn` has already implemented [`CrossBlock`](https://github.com/carefree0910/carefree-learn/blob/03edf2bd8cc32b7fe2ce30be6e4196adf7ab0bde/cflearn/modules/blocks.py#L508), we can utilize it to build our `CrossHead` easily:
+Since `carefree-learn` has already implemented [`CrossBlock`](https://github.com/carefree0910/carefree-learn/blob/03edf2bd8cc32b7fe2ce30be6e4196adf7ab0bde/cflearn/modules/blocks.py#L508), we can utilize it to build our `CrossHead` easily (with the help of `cflearn.register_head`):
 
 ```python
 from typing import Optional
@@ -744,7 +744,12 @@ Notice that we've used `residual=False` in `CrossBlock`, which is the secret ing
 The above two sections showed us how to customize our own `extractor` and `head`, which should be sufficient to implement most of the models targeting tabular datasets. `carefree-learn` actually supports more customizations (e.g. metrics, initializations, etc), but they are more of some tricks than the main part of an algorithm. We hope that this guide can help you leverage `carefree-learn` in your own tasks!
 
 
-## Customize New Losses
+## Customizing New Aggregators
+
+In this section, we'll introduce how to customize your own [`Aggregator`](../design-principles#aggregator).
+
+
+## Customizing New Losses
 
 In this section, we'll introduce how to customize your own losses. Customizing new losses often means that you're facing a difficult task, and you're using your talent to solve it. So congratulations to you because you've reached here!
 
