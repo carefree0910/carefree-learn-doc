@@ -12,41 +12,98 @@ In `carefree-learn`, **Distributed Training** doesn't mean training your model o
 + Ensemble these models (which are trained with the same algorithm) can boost the algorithm's performance without making any changes to the algorithm itself.
 + Parameter searching will be easier & faster.
 
-```python
-import cflearn
-from cfdata.tabular import TabularDataset
+There are two ways to perform distributed training in `carefree-learn`: through high-level API [`cflearn.repeat_with`](apis#repeat_with) or through helper class [`Experiment`](#experiment). We'll introduce their usages in the following sections.
 
-if __name__ == '__main__':
-    x, y = TabularDataset.iris().xy
-    # Notice that 3 fcnn were trained simultaneously with this line of code
-    results = cflearn.repeat_with(x, y, num_repeat=3, num_jobs=0)
-    patterns = results.patterns["fcnn"]
-    # And it is fairly straight forward to apply stacking ensemble
-    ensemble = cflearn.Ensemble.stacking(patterns)
-    patterns_dict = {"fcnn_3": patterns, "fcnn_3_ensemble": ensemble}
-    cflearn.evaluate(x, y, metrics=["acc", "auc"], other_patterns=patterns_dict)
+### `repeat_with`
+
+`repeat_with` is the general method for training multiple neural networks on fixed datasets. It can be used in either *sequential* mode or *distributed* mode. If *distributed* mode is enabled, it will leverage the helper class [`Experiment`](#experiment) internally (here are the pseudo codes):
+
+```python
+experiment = Experiment()
+for model in models:
+    for _ in range(num_repeat):
+        experiment.add_task(
+            model=model,
+            config=fetch_config(model),
+            data_folder=data_folder,
+        )
 ```
 
-:::note
-It is necessary to wrap codes under `__main__` on WINDOWS when running distributed codes.
-:::
+`repeat_with` is very useful when we want to quickly inspect some statistics of our model (e.g. bias and variance), because you can distributedly perform the same algorithm over the same datasets, and then [`cflearn.evaluate`](apis#evaluate) will handle the statistics for you:
 
-Which yields:
-
-```text
-================================================================================================================================
-|        metrics         |                       acc                        |                       auc                        |
---------------------------------------------------------------------------------------------------------------------------------
-|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
---------------------------------------------------------------------------------------------------------------------------------
-|         fcnn_3         |    0.937778    |    0.017498    |    0.920280    | -- 0.993911 -- |    0.000274    |    0.993637    |
---------------------------------------------------------------------------------------------------------------------------------
-|    fcnn_3_ensemble     | -- 0.953333 -- | -- 0.000000 -- | -- 0.953333 -- |    0.993867    | -- 0.000000 -- | -- 0.993867 -- |
-================================================================================================================================
+```python
+results = cflearn.repeat_with(x, y, num_repeat=..., num_jobs=...)
+cflearn.evaluate(x, y, metrics=...)
 ```
 
 :::info
-You might notice that the best results of each column is highlighted with a pair of '--'.
++ See [Benchmarking](#benchmarking) section for more details.
++ See [here](apis#repeat_with) for the detailed API documentation.
+:::
+
+### `Experiment`
+
+If we want to customize the distributed training process (instead of simply replicating), `carefree-learn` also provides an `Experiment` class for us to control every experiment setting, including:
++ Which model should we use for a specific task.
++ Which dataset should we use for a specific task.
++ Which configuration should we use for a specific task.
++ And everything else...
+
+Here are two examples that may frequently appear in real scenarios:
+
+#### Training Multiple Models on Same Dataset
+
+```python
+import cflearn
+import numpy as np
+
+x = np.random.random([1000, 10])
+y = np.random.random([1000, 10])
+
+experiment = cflearn.Experiment()
+# Since we will train every model on x & y, we should dump them to a `data_folder` first.
+# After that, every model can access this dataset by reading `data_folder`.
+data_folder = experiment.dump_data_bundle(x, y)
+# We can add task which will train a model on the dataset.
+for model in ["linear", "fcnn", "tree_dnn"]:
+    # Don't forget to specify the `data_folder`!
+    experiment.add_task(model=model, data_folder=data_folder)
+# After adding the tasks, we can run our tasks easily.
+# Remember to specify the `task_loader` if we want to fetch the `pipeline_dict`.
+results = experiment.run_tasks(task_loader=cflearn.task_loader)
+print(results.pipelines)  # [FCNN(), LinearModel(), TreeDNN()]
+```
+
+#### Training Same Model on Different Datasets
+
+```python
+import cflearn
+import numpy as np
+
+x1 = np.random.random([1000, 10])
+y1 = np.random.random([1000, 10])
+x2 = np.random.random([1000, 10])
+y2 = np.random.random([1000, 10])
+
+experiment = cflearn.Experiment()
+# What's going under the hood here is that `carefree-learn` will 
+#  call `dump_data_bundle` internally to manage the datasets
+experiment.add_task(x1, y1)
+experiment.add_task(x2, y2)
+results = experiment.run_tasks(task_loader=cflearn.task_loader)
+print(results.pipelines)  # [FCNN(), FCNN()]
+```
+
+### Conclusions
+
++ If we want to train same model on same dataset multiple times, use `repeat_with`.
++ Otherwise, use `Experiment`, and keep in mind that:
+    + If we need to share data, use `dump_data_bundle` to dump the shared data to a `data_folder`, then specify this `data_folder` when we call `add_task`.
+    + If we want to add a rather 'isolated' task, simply call `add_task` with the corresponding dataset will be fine.
+    + Specify `task_loader=cflearn.task_loader` if we want to fetch the `pipeline_dict`.
+
+:::info
+`Experiment` supports much more customizations (e.g. customize configurations) than those mentioned above. Please refer to [Advanced Benchmarking](#advanced-benchmarking) for more details.
 :::
 
 
@@ -60,8 +117,11 @@ import numpy as np
 
 x = np.random.random([1000, 10])
 y = np.random.random([1000, 1])
-result = cflearn.repeat_with(x, y, models=["linear", "fcnn"], num_repeat=3)
-cflearn.evaluate(x, y, pipelines=result.pipelines)
+
+if __name__ == "__main__":
+    # Notice that there will always be 2 models training simultaneously with `num_jobs=2`
+    result = cflearn.repeat_with(x, y, models=["linear", "fcnn"], num_repeat=3, num_jobs=2)
+    cflearn.evaluate(x, y, pipelines=result.pipelines)
 ```
 
 Which yields
@@ -78,13 +138,10 @@ Which yields
 ================================================================================================================================
 ```
 
-We can also leverage distributed training supported in `carefree-learn` for faster benchmarking by specifying `num_jobs` to a higher value:
-
-```python
-if __name__ == "__main__":
-    result = cflearn.repeat_with(x, y, models=["linear", "fcnn"], num_repeat=3, num_jobs=2)
-    cflearn.evaluate(x, y, pipelines=result.pipelines)
-```
+:::note
++ It is necessary to wrap codes under `__main__` on WINDOWS when running distributed codes.
++ You might notice that the best results of each column is highlighted with a pair of '--'.
+:::
 
 :::caution
 It is not recommended to enable distributed training unless:
@@ -96,6 +153,130 @@ Otherwise the overhead brought by launching distributed training might actually 
 
 However, there are no 'golden rules' of whether we should use distributed training or not for us to follow, so the best practice is to actually try it out in a smaller scale 🤣
 :::
+
+### Advanced Benchmarking
+
+In order to serve as a carefree tool, `carefree-learn` is able to perform advanced benchmarking (e.g. compare with scikit-learn models) in a few lines of code (in a distributed mode, if needed).
+
+```python
+import cflearn
+import numpy as np
+
+x = np.random.random([1000, 10])
+y = np.random.random([1000, 1])
+
+experiment = cflearn.Experiment()
+data_folder = experiment.dump_data_bundle(x, y)
+
+# Add carefree-learn tasks
+for model in ["linear", "fcnn", "tree_dnn"]:
+    experiment.add_task(model=model, data_folder=data_folder)
+# Add scikit-learn tasks
+run_command = "python run_sklearn.py"
+experiment.add_task(model="svr", run_command=run_command, data_folder=data_folder)
+experiment.add_task(model="linear_svr", run_command=run_command, data_folder=data_folder)
+```
+
+Notice that we specified `run_command="python run_sklearn.py"` for scikit-learn tasks, which means [`Experiment`](#experiment) will try to execute this command in the current working directory for training scikit-learn models. The good news is that we do not need to speciy any command line arguments, because [`Experiment`](#experiment) will handle those for us.
+
+Here is basically what a `run_sklearn.py` should look like:
+
+```python
+import os
+import pickle
+
+from sklearn.svm import SVR
+from sklearn.svm import LinearSVR
+from cflearn.dist.runs._utils import get_info
+
+if __name__ == "__main__":
+    info = get_info()
+    kwargs = info.kwargs
+    # data
+    data_list = info.data_list
+    x, y = data_list[:2]
+    # model
+    model = kwargs["model"]
+    sk_model = (SVR if model == "svr" else LinearSVR)()
+    # train & save
+    sk_model.fit(x, y.ravel())
+    with open(os.path.join(info.workplace, "sk_model.pkl"), "wb") as f:
+        pickle.dump(sk_model, f)
+```
+
+With `run_sklearn.py` defined, we should run those tasks without `task_loader` (because `sk_model` cannot be loaded by `carefree-learn` internally):
+
+```python
+results = experiment.run_tasks()
+```
+
+After finished running, we should be able to see this file structure in the current working directory:
+
+```text
+|--- __experiment__
+   |--- __data__
+      |-- x.npy
+      |-- y.npy
+   |--- fcnn/0
+      |-- _logs
+      |-- __meta__.json
+      |-- cflearn^_^fcnn^_^0000.zip
+   |--- linear/0
+      |-- ...
+   |--- tree_dnn/0
+      |-- ...
+   |--- linear_svr/0
+      |-- __meta__.json
+      |-- sk_model.pkl
+   |--- svr/0
+      |-- ...
+```
+
+As we expected, `carefree-learn` models are saved into zip files, while scikit-learn models are saved into `sk_model.pkl`. We can further inspect these models with `cflearn.evaluate`:
+
+```python
+import os
+import pickle
+
+pipelines = {}
+scikit_patterns = {}
+for workplace, workplace_key in zip(results.workplaces, results.workplace_keys):
+    model = workplace_key[0]
+    if model not in ["svr", "linear_svr"]:
+        pipelines[model] = cflearn.task_loader(workplace)
+    else:
+        model_file = os.path.join(workplace, "sk_model.pkl")
+        with open(model_file, "rb") as f:
+            sk_model = pickle.load(f)
+            # In `carefree-learn`, we treat labels as column vectors.
+            # So we need to reshape the outputs from the scikit-learn models.
+            sk_predict = lambda x: sk_model.predict(x).reshape([-1, 1])
+            sk_pattern = cflearn.ModelPattern(predict_method=sk_predict)
+            scikit_patterns[model] = sk_pattern
+
+cflearn.evaluate(x, y, pipelines=pipelines, other_patterns=scikit_patterns)
+```
+
+Which yields
+
+```text
+~~~  [ info ] Results
+================================================================================================================================
+|        metrics         |                       mae                        |                       mse                        |
+--------------------------------------------------------------------------------------------------------------------------------
+|                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
+--------------------------------------------------------------------------------------------------------------------------------
+|          fcnn          |    0.246332    | -- 0.000000 -- |    -0.24633    |    0.082304    | -- 0.000000 -- |    -0.08230    |
+--------------------------------------------------------------------------------------------------------------------------------
+|         linear         |    0.251605    | -- 0.000000 -- |    -0.25160    |    0.087469    | -- 0.000000 -- |    -0.08746    |
+--------------------------------------------------------------------------------------------------------------------------------
+|       linear_svr       | -- 0.168027 -- | -- 0.000000 -- | -- -0.16802 -- | -- 0.043490 -- | -- 0.000000 -- | -- -0.04349 -- |
+--------------------------------------------------------------------------------------------------------------------------------
+|          svr           | -- 0.168027 -- | -- 0.000000 -- | -- -0.16802 -- | -- 0.043490 -- | -- 0.000000 -- | -- -0.04349 -- |
+--------------------------------------------------------------------------------------------------------------------------------
+|        tree_dnn        |    0.246306    | -- 0.000000 -- |    -0.24630    |    0.082190    | -- 0.000000 -- |    -0.08219    |
+================================================================================================================================
+```
 
 
 ## Hyper Parameter Optimization (HPO)
@@ -119,7 +300,7 @@ if __name__ == '__main__':
     cflearn.evaluate(x, y, pipelines=m)
 ```
 
-Then you will see something like this:
+Which yields
 
 ```text
 ~~~  [ info ] Results

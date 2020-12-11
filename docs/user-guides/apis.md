@@ -10,6 +10,7 @@ title: APIs
 + For development APIs, please refer to the [Build Your Own Models](../developer-guides/customization) section.
 + For AutoML usages, please refer to the [cflearn.Auto](auto-ml) API.
 + For production usages, please refer to the [cflearn.Pack](production) API.
++ For distributed usages, please refer to the [`repeat_with`](distributed#repeat_with) API and the [`Experiment`](distributed#experiment) API.
 + For benchmarking usages, please refer to the [Benchmarking](distributed#benchmarking) section.
 :::
 
