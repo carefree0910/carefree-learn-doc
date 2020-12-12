@@ -46,7 +46,8 @@ import cflearn
 config = {"foo": 0, "dummy": 1}
 fcnn = cflearn.make(**config)
 
-print(fcnn.config)  # {"foo": 0, "dummy": 1, ...}
+assert fcnn.foo == 0
+assert fcnn.dummy == 1
 ```
 
 </TabItem>
@@ -79,10 +80,11 @@ Suppose `basic.json` contains following stuffs:
 }
 ```
 
-Then the output of `print(fcnn.config)` should be:
+Then we should have:
 
 ```python
-{"foo": 2, "dummy": 1, ...}
+assert fcnn.foo == 2
+assert fcnn.dummy == 1
 ```
 
 It is OK to get rid of `increment_config`, in which case the configuration will be completely controlled by `basic.json`:
@@ -93,7 +95,8 @@ import cflearn
 config = "./configs/basic.json"
 fcnn = cflearn.make(config=config)
 
-print(fcnn.config)  # {"foo": 0, "dummy": 1, ...}
+assert fcnn.foo == 0
+assert fcnn.dummy == 1
 ```
 
 </TabItem>
