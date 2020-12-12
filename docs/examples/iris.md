@@ -199,7 +199,7 @@ experiment.add_task(model="random_forest", **common_kwargs)
 
 Notice that we specified `run_command="python run_sklearn.py"` for scikit-learn tasks, which means [`Experiment`](../user-guides/distributed#experiment) will try to execute this command in the current working directory for training scikit-learn models. The good news is that we do not need to speciy any command line arguments, because [`Experiment`](../user-guides/distributed#experiment) will handle those for us.
 
-Here is basically what a `run_sklearn.py` should look like ([source code]([run_sklearn.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/iris/run_sklearn.py))):
+Here is basically what a `run_sklearn.py` should look like ([source code](https://github.com/carefree0910/carefree-learn/blob/dev/examples/iris/run_sklearn.py)):
 
 ```python
 import os
