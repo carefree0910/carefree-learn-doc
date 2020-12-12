@@ -33,6 +33,7 @@ PassengerId,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
 
 What we need to do is to predict the `Survived` column in `test.csv`.
 
+
 ## Configurations
 
 Since the target column is not the last column (which is the default setting of `carefree-learn`), we need to manually configure it:
@@ -42,6 +43,7 @@ data_config = {"label_name": "Survived"}
 ```
 
 And you're all set! Notice that only the `label_name` needs to be provided, and `carefree-learn` will find out the corresponding target column for you😉
+
 
 ## Build Your Model
 
@@ -58,6 +60,7 @@ Unlike other libraries, `carefree-learn` supports *file-in*:
 ```python
 m.fit("train.csv")
 ```
+
 
 ## Evaluate Your Model
 
@@ -87,6 +90,7 @@ Our model achieved an accuracy of `0.860831`, not bad!
 Note that this performance may vary and is not exactly the *training* performance, because `carefree-learn` will automatically split out the cross validation dataset for you. Please refer to [cv_split](../getting-started/configurations#cv_split) for more details.
 :::
 
+
 ## Making Predictions
 
 Again, we can directly make predictions with a file (*file-out*):
@@ -96,6 +100,7 @@ Again, we can directly make predictions with a file (*file-out*):
 # It is OK to simply call `m.predict("test.csv")` because `contains_labels` is False by default
 predictions = m.predict("test.csv", contains_labels=False)
 ```
+
 
 ## Submit Your Results
 
@@ -116,6 +121,7 @@ write_submissions("submissions.csv", predictions)
 
 After running these codes, a `submissions.csv` will be generated and you can submit it to Kaggle directly! In my personal experience, it could achieve from 0.71 to 0.76.
 
+
 ## Improve Your Results
 
 Although the whole process is *carefree* enough, the final score is not yet satisfied. One way to improve the result is to try different models:
@@ -127,6 +133,7 @@ write_submissions("submissions_tree_linear.csv", predictions)
 ```
 
 After submitting `submissions_tree_linear.csv`, we could achieve ~0.775 (and even up to 0.79) now, cool!
+
 
 ## Conclusions
 

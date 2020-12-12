@@ -42,6 +42,7 @@ Since we want to hold the datasets' property, we should not apply any pre-proces
 kwargs = {"task_type": "reg", "use_simplify_data": True}
 ```
 
+
 ## The `add` Dataset
 
 It's pretty clear that the `add` dataset could be solved easily with a `linear` model
@@ -98,6 +99,7 @@ b: tensor([-0.0001], device='cuda:0')
 ```
 
 It's not perfect, but we are happy enough😆
+
 
 ## The `prod` Dataset
 
@@ -218,6 +220,7 @@ w: 1.000136, b: -0.000113
 ``` 
 
 It's not perfect, but we are happy enough😆
+
 
 ## The `mix` Dataset
 
@@ -353,6 +356,7 @@ prod b: tensor([-0.0002], device='cuda:0')
 ```
 
 It's not perfect, but we are happy enough🥳
+
 
 ## Conclusions
 
