@@ -6,12 +6,16 @@ module.exports = {
       "getting-started/quick-start",
       "getting-started/configurations"
     ],
+    "Examples": [
+      "examples/Iris",
+      "examples/Titanic",
+      "examples/Operations"
+    ],
     "User Guides": [
       "user-guides/apis",
       "user-guides/auto-ml",
       "user-guides/distributed",
-      "user-guides/production",
-      "user-guides/examples"
+      "user-guides/production"
     ],
     "Developer Guides": [
       "developer-guides/customization",

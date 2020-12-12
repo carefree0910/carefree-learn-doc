@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 In this page we will go through some basic concepts we need to know to build our own models in `carefree-learn`. Customizing `carefree-learn` could be very easy if you only want to construct existing modules to form a new model structure, and should also be fairly straight forward even if you want to implement your own modules.
 
 :::tip
-There's a step-by-step example [here](../user-guides/examples#operations) which will walk you through the most important concepts with sufficient codes and experiments.
+There's a step-by-step example [here](../examples/operations) which will walk you through the most important concepts with sufficient codes and experiments.
 :::
 
 :::note
@@ -599,7 +599,7 @@ Currently `transform` is not customizable because `carefree-learn` sticks to `on
 :::
 
 :::tip
-Again, we recommend [this](../user-guides/examples#operations) step-by-step example which will walk you through the most important concepts with sufficient codes and experiments.
+Again, we recommend [this](../examples/operations) step-by-step example which will walk you through the most important concepts with sufficient codes and experiments.
 :::
 
 ### Customize `extractor`
@@ -615,7 +615,7 @@ $$
 Although this task seems easy to humans, it is actually quite difficult for Neural Networks because Neural Networks lack information of multiplication across features. We can run a small experiment to quickly demonstrate this:
 
 :::note
-The example showing below is a simplified version of [Operations](../user-guides/examples#operations).
+The example showing below is a simplified version of the [Operations](../examples/operations) example.
 :::
 
 ```python
