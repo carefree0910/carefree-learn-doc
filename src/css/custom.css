@@ -6,6 +6,13 @@
  */
 
 /* You can override the default Infima variables here. */
+a + em {
+  font-style: normal;
+  display: inherit;
+  text-align: center;
+  font-size: 90%;
+}
+
 :root {
   --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: rgb(33, 175, 144);

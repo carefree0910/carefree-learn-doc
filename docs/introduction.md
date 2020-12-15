@@ -4,6 +4,9 @@ title: Introduction
 slug: /
 ---
 
+[ ![Framework](../static/img/framework.png) ](../static/img/framework.png)
+*Framework of carefree-learn (click to zoom in)*
+
 ## Advantages
 
 Like many similar projects, `carefree-learn` can be treated as a high-level library to help with training neural networks in PyTorch. However, `carefree-learn` does less and more than that.
@@ -90,6 +93,15 @@ There is one more thing we'd like to mention: `carefree-learn` is *[Pandas](http
 ## Configurations
 
 In `carefree-learn`, we have few args and kwargs in each module. Instead, we'll use one single argument [`Environment`](getting-started/configurations#environment) to handle the configurations. That's why we can easily support JSON configuration, which is very useful when you need to share your models to others or reproduce others' works.
+
+
+## Components
+
+As shown in the framework at the beginning of this page, `carefree-learn` is mainly constructed with 4 loose coupled modules:
++ Data Layer: this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data).
++ [`Model`](design-principles#model): should implement the core algorithms. Basically, it should implement a `forward` method and a `loss_function` method.
++ [`Inference`](https://github.com/carefree0910/carefree-learn/blob/f5e3d92a4ad5a4e320397f66253804e43839fc41/cflearn/inference.py#L216): it is responsible for making inference. It should be able to work w/ or w/o a [`Model`](design-principles#model), where for the latter case it will use `ONNX` instead (see [here](user-guides/production) for more details).
++ [`Trainer`](https://github.com/carefree0910/carefree-learn/blob/f5e3d92a4ad5a4e320397f66253804e43839fc41/cflearn/trainer.py#L352): it will train a [`Model`](design-principles#model) with specific training data loader & validation data loader.
 
 
 ## Data Loading Strategy

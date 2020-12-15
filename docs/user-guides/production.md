@@ -3,11 +3,11 @@ id: production
 title: Production
 ---
 
-`carefree-learn` supports `onnx` export, but we need much more than one single model (`predictor`) in production environment:
+`carefree-learn` supports `onnx` export, but we need much more than just a [`Model`](../design-principles#model) (`predictor`) in production environment:
 
 ![Pack](../../static/img/pack.png)
 
-Fortunately, `carefree-learn` also supports exporting every part of this pipeline into a zip file with one line of code. Let's first train a simple model on `iris` dataset:
+Fortunately, `carefree-learn` also supports exporting every part of this pipeline into a single zip file with one line of code. Let's first train a simple model on `iris` dataset:
 
 ```python
 import cflearn
