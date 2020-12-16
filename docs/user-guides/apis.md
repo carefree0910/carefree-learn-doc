@@ -12,6 +12,7 @@ title: APIs
 + For production usages, please refer to the [cflearn.Pack](production) API.
 + For distributed usages, please refer to the [`repeat_with`](distributed#repeat_with) API and the [`Experiment`](distributed#experiment) API.
 + For benchmarking usages, please refer to the [Benchmarking](distributed#benchmarking) section.
++ For mlflow integrations, please refer to the [mlflow Integration](mlflow) section.
 :::
 
 

@@ -15,7 +15,8 @@ module.exports = {
       "user-guides/apis",
       "user-guides/auto-ml",
       "user-guides/distributed",
-      "user-guides/production"
+      "user-guides/production",
+      "user-guides/mlflow"
     ],
     "Developer Guides": [
       "developer-guides/customization",
