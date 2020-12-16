@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[24],{96:function(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Tabular Datasets \u2764\ufe0f\xa0PyTorch","permalink":"/carefree-learn-doc/blog/intro"}]}')}}]);
