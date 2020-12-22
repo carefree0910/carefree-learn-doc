@@ -107,6 +107,10 @@ assert fcnn.dummy == 1
 
 In order to manage default configurations, `carefree-learn` introduced `Elements`, which is a `NamedTuple`, to organize the logics. With the help of `Elements`, defining high-level APIs could be fairly easy and straight forward.
 
+:::info
+`Elements` is more of an internal structure used by [make](#make) API than an external API, but we can also use it directly, as shown in the [Example](#example) section.
+:::
+
 ### Elements
 
 Since some fields in `Elements` need to be inferenced with other information, their `default` values are ones assigned in `Elements.make`.
@@ -262,20 +266,35 @@ class Elements(NamedTuple):
 In order to provide out of the box tools, `carefree-learn` implements high level APIs for training, evaluating, distributed, HPO, etc. In this section we'll introduce `cflearn.make` because [other APIs](../user-guides/apis#cflearnapibasic) depend on it more or less.
 
 ```python
-def make(model: str = "fcnn", **kwargs: Any) -> Pipeline:
+def make(
+    model: str = "fcnn",
+    config: general_config_type = None,
+    increment_config: general_config_type = None,
+    **kwargs: Any,
+) -> Pipeline:
     kwargs["model"] = model
-    return Pipeline.make(kwargs)
+    parsed_config = update_dict(_parse_config(config), kwargs)
+    parsed_increment_config = _parse_config(increment_config)
+    return Pipeline.make(parsed_config, parsed_increment_config)
 ```
 
 Notice that we've used `Pipeline.make`, whose definition is:
 
 ```python
 @classmethod
-def make(cls, config: Dict[str, Any]) -> "Pipeline":
-    return cls(Environment.from_elements(Elements.make(config)))
+def make(
+    cls,
+    config: Dict[str, Any],
+    increment_config: Dict[str, Any],
+) -> "Pipeline":
+    return cls(Environment.from_elements(Elements.make(config, increment_config)))
 ```
 
 The reason why we introduce the `make` API is that we hope we can provide APIs as *carefree* as possible. So we've listed the most commonly used configurations in `Elements`, and supported users to specify them through `kwargs` (which is the most intuitive way) in `make`.
+
+:::info
+The correspondence between `make` and `Elements` is illustrated in the [Example](#example) section.
+:::
 
 For example, if we want to switch our device to `"cpu"`, we can simply:
 
@@ -283,6 +302,29 @@ For example, if we want to switch our device to `"cpu"`, we can simply:
 import cflearn
 
 m = cflearn.make(cuda="cpu")
+print(m.device)  # cpu
+```
+
+### Example
+
+As mentioned above, in most cases we can simply use the [`make`](#make) API, but we can also use [`Elements`](#elements) directly. For instance, the following snippets
+
+```python
+import cflearn
+
+m = cflearn.make(cuda="cpu")
+print(m.device)  # cpu
+```
+
+is equivalent to
+
+```python
+from cflearn.configs import *
+from cflearn.pipeline import Pipeline
+
+elements = Elements(cuda="cpu")
+environment = Environment.from_elements(elements)
+m = Pipeline(environment)
 print(m.device)  # cpu
 ```
 
@@ -344,7 +386,7 @@ By default, **all** parameters will be optimized via one single optimizer, so `c
         ...,
         "optimizers": {
             "all": {
-                "optimizer": "adam",
+                "optimizer": "adamw",
                 "optimizer_config": {"lr": 1e-3},
                 "scheduler": "plateau",
                 "scheduler_config": {"mode": "max", ...}
