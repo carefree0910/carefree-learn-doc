@@ -307,7 +307,7 @@ print(m.device)  # cpu
 
 ### Example
 
-As mentioned above, in most cases we can simply use the [`make`](#make) API, but we can also use [`Elements`](#elements) directly. For instance, the following snippets
+As mentioned above, in most cases we can simply use the [`make`](#make) API, but we can also use [`Elements`](#elements) directly. For instance, the following snippet
 
 ```python
 import cflearn
