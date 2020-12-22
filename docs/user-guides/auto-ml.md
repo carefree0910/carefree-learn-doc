@@ -142,15 +142,15 @@ For example, if we want to use `sgd` instead of the default `adamw`, we can simp
 
 ```python
 import cflearn
-import numpy as np
+from cfdata.tabular import TabularDataset
 
-x = np.random.random([1000, 10])
-y = np.random.random([1000, 1])
+# We'll use the famous iris dataset
+x, y = TabularDataset.iris().xy
 m = cflearn.make(optimizer="sgd").fit(x, y)
 print(m.trainer.optimizers["all"])  # SGD(...)
 ```
 
-but we are not sure which one is better, and here's AutoML that comes to help. Since we should choose from either `sgd` or `adamw`, the search space is pretty simple:
+but we are not sure which one is better, and here's where AutoML could help. Since we should choose from either `sgd` or `adamw`, the search space is pretty simple:
 
 ```python
 optimizer_param = cflearn.OptunaParam(
@@ -171,27 +171,68 @@ After which we can perform AutoML on this search space:
 ```python
 # notice that we've constraint the model space to `linear`
 # because we've only defined the search space for `linear`
-auto = cflearn.Auto("reg", models="linear").fit(x, y, params=params)
+auto = cflearn.Auto("clf", models="linear").fit(x, y, params=params)
 ```
 
 Which yields
 
 ```text
-[I 2020-12-22 18:16:44,946] A new study created in memory with name: linear_optuna
-[I 2020-12-22 18:16:49,200] Trial 0 finished with value: -1.174601199105382 and parameters: {'opt': 'adamw'}. Best is trial 0 with value: -1.174601199105382.
-[I 2020-12-22 18:16:55,643] Trial 1 finished with value: -1.1822145022451878 and parameters: {'opt': 'sgd'}. Best is trial 0 with value: -1.174601199105382.
-[I 2020-12-22 18:17:02,122] Trial 2 finished with value: -1.2407564036548138 and parameters: {'opt': 'sgd'}. Best is trial 0 with value: -1.174601199105382.
-[I 2020-12-22 18:17:05,218] Trial 3 finished with value: -1.2113975938409567 and parameters: {'opt': 'adamw'}. Best is trial 0 with value: -1.174601199105382.
+[I 2020-12-22 19:45:13,597] A new study created in memory with name: linear_optuna
+[I 2020-12-22 19:45:14,461] Trial 0 finished with value: 0.401367224752903 and parameters: {'opt': 'adamw'}. Best is trial 0 with value: 0.401367224752903.
+[I 2020-12-22 19:45:15,222] Trial 1 finished with value: 0.37729840725660324 and parameters: {'opt': 'sgd'}. Best is trial 0 with value: 0.401367224752903.
+[I 2020-12-22 19:45:16,028] Trial 2 finished with value: 0.6434845961630344 and parameters: {'opt': 'adamw'}. Best is trial 2 with value: 0.6434845961630344.
+[I 2020-12-22 19:45:16,818] Trial 3 finished with value: 0.14388968795537949 and parameters: {'opt': 'adamw'}. Best is trial 2 with value: 0.6434845961630344.
 ......
 ```
 
-As shown above, `optuna` will try to search the best hyperparameters with the defined search space for us. Since our search space only contains two possible choices (`{'opt': 'sgd'}` and `{'opt': 'adamw'}`), `optuna` will jump between these two choices over and over again.
+As shown above, [`optuna`](https://optuna.org/) will try to search the best hyperparameters with the defined search space for us. Since our search space only contains two possible choices (`{'opt': 'sgd'}` and `{'opt': 'adamw'}`), [`optuna`](https://optuna.org/) will jump between these two choices over and over again.
 
 After the searching we can obtain the searched optimizer via `best_params`:
 
 ```python
-print(auto.best_params["optimizer"])
+print(auto.best_params["linear"]["optimizer"])  # adamw
 ```
+
+Great! Now we know that `adamw` may be better than `sgd`. But soon we'll encounter another issue: what learning rate (`lr`) should we use? Since the default `lr` is `1e-3`, it's hard to tell whether `adamw` will always better than `sgd`, or it is better only if `lr=1e-3`. And again, here's where AutoML could help. Since `lr` should be searched in a logarithm way, we should define the search space as follows:
+
+```python
+# the parameters of this search space should define the 'floor' and the 'ceiling'
+# in this example, we are specifying 1e-5 <= lr <= 0.1
+# and we are using {"log": True} to indicate that we are searching in a logarithm way
+lr_param = cflearn.OptunaParam("lr", [1e-5, 0.1], "float", {"log": True})
+params = {
+    "linear": {
+        "optimizer": optimizer_param,
+        "optimizer_config": {"lr": lr_param},
+    }
+}
+```
+
+After which we can perform AutoML on this search space:
+
+```python
+auto = cflearn.Auto("clf", models="linear").fit(x, y, params=params)
+```
+
+Which yields
+
+```text
+[I 2020-12-22 19:57:22,893] A new study created in memory with name: linear_optuna
+[I 2020-12-22 19:57:23,766] Trial 0 finished with value: 0.12851058691740036 and parameters: {'opt': 'adamw', 'lr': 0.002884297316991861}. Best is trial 0 with value: 0.12851058691740036.
+[I 2020-12-22 19:57:24,615] Trial 1 finished with value: 0.26402048021554947 and parameters: {'opt': 'adamw', 'lr': 3.506510110282046e-05}. Best is trial 1 with value: 0.26402048021554947.
+[I 2020-12-22 19:57:25,493] Trial 2 finished with value: 0.6952096559107304 and parameters: {'opt': 'adamw', 'lr': 0.01178820649139017}. Best is trial 2 with value: 0.6952096559107304.
+[I 2020-12-22 19:57:26,356] Trial 3 finished with value: 0.9276982471346855 and parameters: {'opt': 'adamw', 'lr': 0.08356996061205905}. Best is trial 3 with value: 0.9276982471346855.
+......
+```
+
+As shown above, this time we are searching for the best `lr` as well. We can futher obtain the searched optimizer and `lr` via `best_params`:
+
+```python
+print(auto.best_params["linear"]["optimizer"])               # adamw
+print(auto.best_params["linear"]["optimizer_config"]["lr"])  # 0.09311529866070806
+```
+
+Great! Now we know the best hyperparameter combination for `linear` model on `iris` dataset: `adamw` with `lr=0.0931`.
 
 #### In a Nut Shell
 
@@ -211,8 +252,28 @@ into
 ```python
 # you can change "opt" into any other (unique) identifier
 optimizer_param = cflearn.OptunaParam("opt", ["sgd", "adamw"], "categorical")
-# xxx here is your model
+# xxx should be your model
 params = {"xxx": {"optimizer": optimizer_param}}
+cflearn.Auto(..., models="xxx").fit(x, y, params=params)
+```
+
+##### the `lr` search space
+
+We need to turn
+
+```python
+params = {"optimizer_config": {"lr": 1e-3}}
+cflearn.make(config=params).fit(x, y)
+```
+
+into
+
+```python
+# you can change "lr" into any other (unique) identifier
+lr_param = cflearn.OptunaParam("lr", [1e-5, 0.1], "float", {"log": True})
+# xxx should be your model
+params = {"xxx": {"optimizer_config": {"lr": lr_param}}}
+cflearn.Auto(..., models="xxx").fit(x, y, params=params)
 ```
 
 #### Default Search Space
