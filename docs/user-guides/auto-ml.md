@@ -135,7 +135,8 @@ However customizing `params` requires some more steps, and we'll illustrate how 
 As shown in the [`make`](../getting-started/configurations#make) API, we can specify configurations through `kwargs`. Customizing `params` is actually no more than customizing this `kwargs`, except it should turn the target hyperparameter from a specific value to an `OptunaParam`.
 
 :::info
-If you are more interested in codes than a step by step tutorial, you can jump to the [In a Nut Shell](#in-a-nut-shell) section directly.
++ If you are more interested in codes than a step by step tutorial, you can jump to the [In a Nut Shell](#in-a-nut-shell) section directly.
++ If you are more interested in the API documentations, you can jump to the [APIs](#apis) section directly.
 :::
 
 For example, if we want to use `sgd` instead of the default `adamw`, we can simply
@@ -276,7 +277,7 @@ params = {"xxx": {"optimizer_config": {"lr": lr_param}}}
 cflearn.Auto(..., models="xxx").fit(x, y, params=params)
 ```
 
-#### Default Search Spaces
+#### The Default Search Spaces
 
 The default search spaces of `carefree-learn` have already provided examples on how to define search spaces for some critical hyperparameters (e.g. optimizer, learning rate, etc.). To be concrete, `carefree-learn` will use `OptunaPresetParams` to manage a set of default search spaces:
 
@@ -329,6 +330,8 @@ class OptunaPresetParams:
         ...
 ```
 
+You can inspect the source code [here](https://github.com/carefree0910/carefree-learn/blob/752f4190aab49e6fa44e3926c01aeec5dc9a129a/cflearn/api/hpo.py#L774-L814) to see how `carefree-learn` defines its default search spaces, as well as [here](https://github.com/carefree0910/carefree-learn/blob/752f4190aab49e6fa44e3926c01aeec5dc9a129a/cflearn/api/hpo.py#L836-L859) to see how `carefree-learn` defines search spaces for `fcnn`. These two snippets should be able to cover most of the common use cases.
+
 ### Define Extra Configurations
 
 If we want to change some default behaviours of `cflearn.Auto`, we can specify the `extra_configs` in `fit`:
@@ -351,5 +354,303 @@ What's facinating is that we can pack the models trained by `cflearn.Auto` into 
 ```python
 auto.pack("pack")
 ```
+
+Please refer to [AutoML in Production](production#automl-in-production) for more details.
+
+
+# APIs
+
+In this section, we'll introduce some APIs related to `cflearn.Auto` in details.
+
+
+## `OptunaParam`
+
+> Source code: [hpo.py -> class OptunaParam](https://github.com/carefree0910/carefree-learn/blob/752f4190aab49e6fa44e3926c01aeec5dc9a129a/cflearn/api/hpo.py#L344).
+
+General interface for defining search spaces of hyperparameters.
+
+```python
+class OptunaParam(NamedTuple):
+    name: str
+    values: Any
+    dtype: str  # [int | float | categorical]
+    config: Optional[Dict[str, Any]] = None
+```
+
++ **`name`**
+    + Specify the **unique** identifier of the current search space.
++ **`values`**
+    + Indicate the parameters of this search space.
+    + If **`dtype`** is `"int"` or `"float"`, then **`values`** should represent the lower bound and upper bound of this search space.
+    + If **`dtype`** is `"categorical"`, then **`values`** should represent the possible choices of this search space.
++ **`dtype`**
+    + Indicate the type of this search space.
+    + If `"int"`, then this search space will be finite and will only pop integer values.
+    + If `"float"`, then this search space will be infinite and will only pop float values.
+    + If `"categorical"`, then this search space will be finite and will only pop values specified by **`values`**.
++ **`config`** [default = `None`]
+    + Specify other configurations used in `optuna`.
+    + There's only one common use case, namely if we need to search in a logarithm way, that we need to specify `config={"log": True}`.
+
+### Examples
+
+```python
+import cflearn
+from cfdata.tabular import TabularDataset
+
+x, y = TabularDataset.iris().xy
+lr_param = cflearn.OptunaParam("lr", [1e-5, 0.1], "float", {"log": True})
+params = {"linear": {"optimizer_config": {"lr": lr_param}}}
+auto = cflearn.Auto("clf", models="linear").fit(x, y, params=params)
+```
+
+
+## `OptunaPresetParams`
+
+> Source code: [hpo.py -> class OptunaPresetParams](https://github.com/carefree0910/carefree-learn/blob/752f4190aab49e6fa44e3926c01aeec5dc9a129a/cflearn/api/hpo.py#L760).
+
+Structure for defining default search spaces of each model.
+
+```python
+class OptunaPresetParams:
+    def __init__(
+        self,
+        *,
+        tune_lr: bool = True,
+        tune_optimizer: bool = True,
+        tune_scheduler: bool = True,
+        tune_ema_decay: bool = True,
+        tune_clip_norm: bool = True,
+        tune_batch_size: bool = True,
+        tune_init_method: bool = True,
+        **kwargs: Any,
+    ):
+```
+
++ **`tune_lr`** [default = `True`]
+    + Specify whether we should include the search space of `lr`.
++ **`tune_optimizer`** [default = `True`]
+    + Specify whether we should include the search space of `optimizer`.
++ **`tune_ema_decay`** [default = `True`]
+    + Specify whether we should include the search space of `ema_decay`.
++ **`tune_clip_norm`** [default = `True`]
+    + Specify whether we should include the search space of `clip_norm`.
++ **`tune_init_method`** [default = `True`]
+    + Specify whether we should include the search space of `init_method`.
++ **`kwargs`** [default = `{}`]
+    + Specify other configs that may be used in the definitions of search spaces of each model.
+
+### `get`
+
+Method for getting the default search spaces of the specific model.
+
+```python
+def get(self, model: str) -> optuna_params_type:
+```
+
++ **`model`**
+    + Specify which model's default search spaces that we want to get.
+
+#### Examples
+
+```python
+import cflearn
+
+preset = cflearn.OptunaPresetParams()
+print(preset.get("linear"))  # ...
+```
+
+
+## `cflearn.Auto`
+
+> Source code: [auto.py -> class Auto](https://github.com/carefree0910/carefree-learn/blob/752f4190aab49e6fa44e3926c01aeec5dc9a129a/cflearn/api/auto.py#L42)
+
+`Auto` implement the high-level parts, and should be able to cover the life cycle of an AutoML task.
+
+```python
+class Auto:
+    def __init__(
+        self,
+        task_type: task_type_type,
+        *,
+        models: Union[str, List[str]] = "auto",
+        tune_lr: bool = True,
+        tune_optimizer: bool = True,
+        tune_ema_decay: bool = True,
+        tune_clip_norm: bool = True,
+        tune_init_method: bool = True,
+        **kwargs: Any,
+    ):
+```
+
++ **`task_type`**
+    + Specify the task type.
+    + `"clf"` for classification tasks.
+    + `"reg"` for regression tasks.
++ **`models`** [default = `"auto"`]
+    + Specify the [Model Space](#define-model-space).
++ **`tune_lr`** [default = `True`]
+    + Specify whether we should include the search space of `lr`.
++ **`tune_optimizer`** [default = `True`]
+    + Specify whether we should include the search space of `optimizer`.
++ **`tune_ema_decay`** [default = `True`]
+    + Specify whether we should include the search space of `ema_decay`.
++ **`tune_clip_norm`** [default = `True`]
+    + Specify whether we should include the search space of `clip_norm`.
++ **`tune_init_method`** [default = `True`]
+    + Specify whether we should include the search space of `init_method`.
++ **`kwargs`** [default = `{}`]
+    + Specify other configs used in [`OptunaPresetParams`](#optunapresetparams).
+
+### `fit`
+
+Method for running the training process of an AutoML task.
+
+```python
+def fit(
+    self,
+    x: data_type,
+    y: data_type = None,
+    x_cv: data_type = None,
+    y_cv: data_type = None,
+    *,
+    study_config: Optional[Dict[str, Any]] = None,
+    predict_config: Optional[Dict[str, Any]] = None,
+    metrics: Optional[Union[str, List[str]]] = None,
+    params: Optional[Dict[str, optuna_params_type]] = None,
+    num_jobs: int = 1,
+    num_trial: int = 20,
+    num_repeat: int = 5,
+    num_parallel: int = 1,
+    timeout: Optional[float] = None,
+    score_weights: Optional[Dict[str, float]] = None,
+    estimator_scoring_function: Union[str, scoring_fn_type] = default_scoring,
+    temp_folder: str = "__tmp__",
+    num_final_repeat: int = 20,
+    extra_config: general_config_type = None,
+    cuda: Optional[Union[str, int]] = None,
+) -> "Auto":
+```
+
++ **`x`**
+    + Specify the training features.
+    + Could be either a `ndarray` or a `file`.
++ **`y`** [default = `None`]
+    + Specify the training labels.
+    + If **`x`** is a `file`, then we should leave **`y`** unspecified.
++ **`x_cv`** [default = `None`]
+    + Specify the cross validation features (if provided).
+    + If **`x`** is a `file`, then **`x_cv`** should also be a `file`
++ **`y_cv`** [default = `None`]
+    + Specify the cross validation labels (if provided).
+    + If **`x_cv`** is a `file`, then we should leave **`y_cv`** unspecified.
++ **`study_config`** [default = `None`]
+    + Configs that will be passed into [`optuna.create_study`](https://optuna.readthedocs.io/en/stable/reference/generated/optuna.create_study.html).
++ **`predict_config`** [default = `None`]
+    + Configs that will be passed into [`Pipeline.predict`](../user-guides/apis#predict).
++ **`metrics`** [default = `None`]
+    + Specify which metric(s) are we going to use to monitor our training process.
+    + If not provided, we'll use the [default settings](../getting-started/configurations#metrics).
++ **`params`** [default = `None`]
+    + Specify the [Search Spaces](#define-search-spaces).
+    + If not provided, we'll use [the default search spaces](#the-default-search-spaces).
++ **`num_jobs`** [default = 1]
+    + Number of processes run in parallel.
+    + If set to value greater than `1`, we'll use distributed training.
++ **`num_trial`** [default = 20]
+    + Number of trials we will run through.
+    + This is equivalent to *how many combinations of hyperparameters will we try*.
++ **`num_repeat`** [default = 5]
+    + Number of models we train in each trial.
++ **`num_parallel`** [default = 1]
+    + Number of processes run in parallel, in each trial.
+    + It is recommended to leave it as `1`, unless **`num_repeat`** has been set to a very large number.
++ **`timeout`** [default = `None`]
+    + The `timeout` argument used in [`optuna.study.Study.optimize`](https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Study.html#optuna.study.Study.optimize).
++ **`score_weights`** [default = `None`]
+    + Specify the weights of each metric.
+    + It is recommended to leave it as `None`, which means we will treat every metric as equal.
++ **`estimator_scoring_function`** [default = `"default"`]
+    + Specify the scoring function we'll use to aggregate every score and get the final score.
++ **`temp_folder`** [default = `"__tmp__"`]
+    + Temporary folder in which we used to store the intermediate results.
++ **`num_final_repeat`** [default = `20`]
+    + Specify the final `num_repeat` we'll use in [`repeat_with`](../user-guides/apis#repeat_with).
++ **`extra_config`** [default = `None`]
+    + Specify the [Extra Configurations](#define-extra-configurations).
++ **`cuda`** [default = `None`]
+    + Specify the working GPU.
+    + If not provided, `carefree-learn` will try to inference it automatically.
+
+### `best_params`
+
+Property that stores the best hyperparameters searched in the `fit` process.
+
+#### Examples
+
+```python
+import cflearn
+from cfdata.tabular import TabularDataset
+
+x, y = TabularDataset.iris().xy
+auto = cflearn.Auto("clf", models=["linear", "fcnn"]).fit(x, y)
+print(auto.best_params)
+```
+
+Which yields
+
+```json
+{
+    "linear": {
+        "optimizer_config": {
+            "lr": 0.08741785470275337
+        },
+        "optimizer": "adamw",
+        "scheduler": "plateau",
+        "model_config": {
+            "ema_decay": 0.0,
+            "default_encoding_configs": {
+                "init_method": "truncated_normal"
+            }
+        },
+        "trainer_config": {
+            "clip_norm": 1.0146174647714874
+        },
+        "batch_size": 32
+    },
+    "fcnn": {
+        "optimizer_config": {
+            "lr": 0.035924214329005666
+        },
+        "optimizer": "rmsprop",
+        "scheduler": "plateau",
+        "model_config": {
+            "ema_decay": 0.0,
+            "default_encoding_configs": {
+                "init_method": "truncated_normal",
+                "embedding_dim": "auto"
+            },
+            "hidden_units": [
+                8
+            ],
+            "mapping_configs": {
+                "batch_norm": false,
+                "dropout": 0.4412946560665756,
+                "pruner_config": null
+            }
+        },
+        "trainer_config": {
+            "clip_norm": 0.0
+        },
+        "batch_size": 32
+    }
+}
+```
+
+### `pack`
+
+Please refer to [AutoML in Production](production#automl-in-production) for more details.
+
+### `unpack`
 
 Please refer to [AutoML in Production](production#automl-in-production) for more details.

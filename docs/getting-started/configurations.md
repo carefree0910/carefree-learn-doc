@@ -342,7 +342,7 @@ In this section we'll introduce some default configurations used in `carefree-le
 By default:
 + `mae` & `mse` is used for regression tasks, while `auc` & `acc` is used for classification tasks.
 + An EMA with `decay = 0.1` will be used.
-+ Every metrics will be treated as equal. 
++ Every metric will be treated as equal. 
 
 So `carefree-learn` will construct the following configurations for you (take classification tasks as an example):
 
