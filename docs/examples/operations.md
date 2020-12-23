@@ -5,7 +5,7 @@ title: Operations
 
 | Python source code | Jupyter Notebook |
 |:---:|:---:|
-| [op.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/operations/op.py) | [op.ipynb](https://github.com/carefree0910/carefree-learn/blob/dev/examples/operations/op.ipynb) |
+| [op.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/operations/op.py) | [op.ipynb](https://nbviewer.jupyter.org/github/carefree0910/carefree-learn/blob/dev/examples/operations/op.ipynb) |
 
 `Operations` are toy datasets for us to illustrate how to build your own models in `carefree-learn`. We will generate some artificial datasets based on basic *operations*, namely `sum`, `prod` and their mixture, to deonstrate the validity of our customized model.
 

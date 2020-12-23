@@ -5,7 +5,7 @@ title: Titanic
 
 | Python source code | Jupyter Notebook |
 |:---:|:---:|
-| [titanic.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.py) | [titanic.ipynb](https://github.com/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.ipynb) |
+| [titanic.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.py) | [titanic.ipynb](https://nbviewer.jupyter.org/github/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.ipynb) |
 
 `Titanic` is a famous playground competition hosted by Kaggle ([here](https://www.kaggle.com/c/titanic)), so I'll simply copy-paste its brief description here:
 
