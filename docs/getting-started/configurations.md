@@ -118,6 +118,8 @@ Since some fields in `Elements` need to be inferenced with other information, th
 ```python
 class Elements(NamedTuple):
     model: str = "fcnn"
+    aggregator: str = "sum"
+    aggregator_config: Optional[Dict[str, Any]] = None
     data_config: Optional[Dict[str, Any]] = None
     task_type: Optional[task_type_type] = None
     use_simplify_data: bool = False
@@ -143,10 +145,12 @@ class Elements(NamedTuple):
     model_config: Optional[Dict[str, Any]] = None
     loss: str = "auto"
     loss_config: Optional[Dict[str, Any]] = None
+    default_encoding_init_method: Optional[str] = None
     metrics: Union[str, List[str]] = "auto"
     metric_config: Optional[Dict[str, Any]] = None
-    optimizer: Optional[str] = None
-    scheduler: Optional[str] = None
+    lr: Optional[float] = None
+    optimizer: Optional[str] = "adamw"
+    scheduler: Optional[str] = "warmup"
     optimizer_config: Optional[Dict[str, Any]] = None
     scheduler_config: Optional[Dict[str, Any]] = None
     optimizers: Optional[Dict[str, Any]] = None
@@ -154,9 +158,8 @@ class Elements(NamedTuple):
     use_tqdm: bool = True
     trigger_logging: bool = False
     cuda: Optional[Union[int, str]] = None
-    tracker_config: Optional[Dict[str, Any]] = None
+    mlflow_config: Optional[Dict[str, Any]] = None
     extra_config: Optional[Dict[str, Any]] = None
-    user_defined_config: Optional[Dict[str, Any]] = None
 ```
 
 + **`model`** [default = `"fcnn"`]
@@ -164,6 +167,10 @@ class Elements(NamedTuple):
     + Currently `carefree-learn` supports:
         + `"linear"`, `"fcnn"`, `"wnd"`, `"nnb"`, `"ndt"`, `"tree_linear"`, `"tree_stack"`, `"tree_dnn"` and `"ddr"` for basic usages.
         + `"rnn"` and `"transformer"` for time series usages.
++ **`aggregator`** [default = `"sum"`]
+    + Specify the [`Aggregator`](../design-principles#aggregator) we're going to use.
++ **`aggregator_config`** [default = `{}`]
+    + Specify the config for the [`Aggregator`](../design-principles#aggregator).
 + **`data_config`** [default = `{}`]
     + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
 + **`task_type`** [default = `None`]
@@ -230,10 +237,15 @@ class Elements(NamedTuple):
     + Currently `carefree-learn` supports `mae`, `mse`, `quantile`, `cross_entropy`, `label_smooth_cross_entropy` and `focal`.
 + **`loss_config`** [default = `None`]
     + Configurations of the corresponding loss.
++ **`default_encoding_init_method`** [default = `None`]
+    + Default init method for encoding.
 + **`metrics`** [default = `"auto"`]
     + Specify which metric(s) are we going to use to monitor our training process
 + **`metric_config`** [default = `{}`]
     + Specify the fine grained configurations of metrics. See [`metrics`](#metrics) for more details.
++ **`lr`** [default = `None`]
+    + Default learning rate.
+    + If not specified, `carefree-learn` will try to infer the best default value.
 + **`optimizer`** [default = `"adam"`]
     + Specify which optimizer will be used.
 + **`scheduler`** [default = `"plateau"`]
@@ -253,13 +265,11 @@ class Elements(NamedTuple):
 + **`cuda`** [default = `None`]
     + Specify the working GPU.
     + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`tracker_config`** [default = `None`]
-    + Specify the configuration of `cftool.ml.Tracker`.
-    + If `None`, then `Tracker` will not be used.
++ **`mlflow_config`** [default = `None`]
+    + Specify the configuration of `mlflow`.
+    + If `None`, then we will not utilize `mlflow`.
 + **`extra_config`** [default = `{}`]
     + Other configurations.
-+ **`user_defined_config`** [default = `{}`]
-    + User defined configurations.
 
 ### make
 
