@@ -58,7 +58,7 @@ import cflearn
 import numpy as np
 
 x = np.random.random([1000, 10])
-y = np.random.random([1000, 10])
+y = np.random.random([1000, 1])
 
 experiment = cflearn.Experiment()
 # Since we will train every model on x & y, we should dump them to a `data_folder` first.
@@ -81,9 +81,9 @@ import cflearn
 import numpy as np
 
 x1 = np.random.random([1000, 10])
-y1 = np.random.random([1000, 10])
+y1 = np.random.random([1000, 1])
 x2 = np.random.random([1000, 10])
-y2 = np.random.random([1000, 10])
+y2 = np.random.random([1000, 1])
 
 experiment = cflearn.Experiment()
 # What's going under the hood here is that `carefree-learn` will 
@@ -159,6 +159,7 @@ However, there are no 'golden rules' of whether we should use distributed traini
 In order to serve as a carefree tool, `carefree-learn` is able to perform advanced benchmarking (e.g. compare with scikit-learn models) in a few lines of code (in a distributed mode, if needed).
 
 ```python
+import sys
 import cflearn
 import numpy as np
 
@@ -172,10 +173,14 @@ data_folder = experiment.dump_data_bundle(x, y)
 for model in ["linear", "fcnn", "tree_dnn"]:
     experiment.add_task(model=model, data_folder=data_folder)
 # Add scikit-learn tasks
-run_command = "python run_sklearn.py"
+run_command = f"{sys.executable} run_sklearn.py"
 experiment.add_task(model="svr", run_command=run_command, data_folder=data_folder)
 experiment.add_task(model="linear_svr", run_command=run_command, data_folder=data_folder)
 ```
+
+:::note
+The `sys.executable` could be considered as `python`. When using conda env, use `python` directly may fail to link to the correct python executable, so we need to use `sys.executable` to ensure that the correct python executable is used.
+:::
 
 Notice that we specified `run_command="python run_sklearn.py"` for scikit-learn tasks, which means [`Experiment`](#experiment) will try to execute this command in the current working directory for training scikit-learn models. The good news is that we do not need to speciy any command line arguments, because [`Experiment`](#experiment) will handle those for us.
 
