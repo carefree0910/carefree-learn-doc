@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ### Pre-Installing PyTorch
 
-`carefree-learn` requires `pytorch==1.6.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/), and it is highly recommended to pre-install PyTorch with conda.
+`carefree-learn` requires `pytorch>=1.8.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/), and it is highly recommended to pre-install PyTorch with conda.
 
 ### pip installation
 

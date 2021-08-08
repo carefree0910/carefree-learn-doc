@@ -3,11 +3,14 @@ import TabItem from '@theme/TabItem';
 
 ![carefree-learn][socialify-image]
 
-`carefree-learn` is a minimal Automatic Machine Learning (AutoML) solution for tabular datasets based on [PyTorch](https://pytorch.org/).
+Deep Learning with [PyTorch](https://pytorch.org/) made easy 🚀 !
+
 
 ## Carefree?
 
-`carefree-learn` aims to provide **CAREFREE** usages for both users and developers:
+`carefree-learn` aims to provide **CAREFREE** usages for both users and developers. It also provides a [corresponding repo](https://github.com/carefree0910/carefree-learn-deploy) for production.
+
+### Machine Learning 📈
 
 <Tabs
   defaultValue="users"
@@ -24,21 +27,55 @@ import numpy as np
 
 x = np.random.random([1000, 10])
 y = np.random.random([1000, 1])
-m = cflearn.make().fit(x, y)
+m = cflearn.ml.CarefreePipeline().fit(x, y)
 ```
 
 </TabItem>
 <TabItem value="developers">
 
-```python
-import cflearn
-import numpy as np
+> This is a WIP section :D
 
-cflearn.register_model("wnd_full", pipes=[cflearn.PipeInfo("fcnn"), cflearn.PipeInfo("linear")])
-x = np.random.random([1000, 10])
-y = np.random.random([1000, 1])
-m = cflearn.make("wnd_full").fit(x, y)
+</TabItem>
+</Tabs>
+
+### Computer Vision 🖼️
+
+<Tabs
+  defaultValue="users"
+  values={[
+    {label: 'Users', value: 'users'},
+    {label: 'Developers', value: 'developers'},
+  ]
+}>
+<TabItem value="users">
+
+```python
+# MNIST classification task with resnet18
+
+import os
+import cflearn
+
+train_loader, valid_loader = cflearn.cv.get_mnist(transform="to_tensor")
+
+m = cflearn.cv.CarefreePipeline(
+    "clf",
+    {
+        "in_channels": 1,
+        "num_classes": 10,
+        "latent_dim": 512,
+        "encoder1d": "backbone",
+        "encoder1d_configs": {"name": "resnet18"},
+    },
+    loss_name="cross_entropy",
+    metric_names="acc",
+)
+m.fit(train_loader, valid_loader)
 ```
+
+</TabItem>
+<TabItem value="developers">
+
+> This is a WIP section :D
 
 </TabItem>
 </Tabs>
@@ -47,9 +84,14 @@ m = cflearn.make("wnd_full").fit(x, y)
 Please refer to [Quick Start](docs/getting-started/quick-start) and [Build Your Own Models](docs/developer-guides/customization) for detailed information.
 :::
 
+
 ## Why carefree-learn?
 
-`carefree-learn`
+`carefree-learn` is a general Deep Learning framework based on PyTorch. Since `v0.2.x`, `carefree-learn` has extended its usage from **tabular dataset** to (almost) **all kinds of dataset**. In the mean time, the APIs remain (almost) the same as `v0.1.x`: still simple, powerful and easy to use!
+
+Here are some main advantages that `carefree-learn` holds:
+
+### Machine Learning 📈
 
 + Provides a [scikit-learn](https://scikit-learn.org/stable/)-like interface with much more 'carefree' usages, including:
     + Automatically deals with data pre-processing.
@@ -68,6 +110,13 @@ Please refer to [Quick Start](docs/getting-started/quick-start) and [Build Your 
     + [`carefree-data`](https://github.com/carefree0910/carefree-data): a lightweight tool to read -> convert -> process **ANY** tabular datasets. It also utilizes [cython](https://cython.org/) to accelerate critical procedures.
 
 From the above, it comes out that `carefree-learn` could be treated as a minimal **Auto**matic **M**achine **L**earning (AutoML) solution for tabular datasets when it is fully utilized. However, this is not built on the sacrifice of flexibility. In fact, the functionality we've mentioned are all wrapped into individual modules in `carefree-learn` and allow users to customize them easily.
+
+### Computer Vision 🖼️
+
++ Also provides a [scikit-learn](https://scikit-learn.org/stable/)-like interface with much more 'carefree' usages.
++ Seamlessly supported `ddp` (simply switch `m.fit(...)` to `m.ddp(...)`)
++ Bunch of utility functions for research and production.
+
 
 ## Citation
 
