@@ -13,9 +13,8 @@ import TabItem from '@theme/TabItem';
 
 In `carefree-learn`, there are five main design principles that address this tension together:
 
-+ Share configurations with the help of `Environment` (see [`Configurations`](getting-started/configurations)).
-+ Build some [`Common Blocks`](#common-blocks) which shall be leveraged across different models.
 + Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline).
++ Build some [`Common Blocks`](#common-blocks) which shall be leveraged across different [`Model`](#model)s.
 + Divide `Model` into three parts: [`transform`](#transform), [`extractor`](#extractor) and [`head`](#head), which form a [`pipe`](#pipe).
 + Implemente functions (`cflearn.register_*` to be exact) to ensure flexibility and control on different modules and stuffs (see [`Registration`](#registration)).
 
