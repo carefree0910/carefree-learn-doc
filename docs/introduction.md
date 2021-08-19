@@ -235,8 +235,8 @@ And we'll convert them into [cfdata.tabular.TaskTypes](https://github.com/carefr
 
 ### train, valid & test
 
-+ We use `train` dataset to **directly** optimize our model (please refer to [optimizers](#optimizers) for more details).
-+ We use `valid` dataset to **monitor** our model, and decide which checkpoint should we use / when shall we perform early strop.
++ We use `train` dataset to **directly optimize** our model (please refer to [optimizers](#optimizers) for more details).
++ We use `valid` (validation) dataset to **monitor** our model, and to decide which checkpoint should we use / when shall we perform early strop.
 + We use `test` dataset to **evaluate** our model.
 
 ### metrics
