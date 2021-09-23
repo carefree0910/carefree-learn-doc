@@ -45,7 +45,7 @@ When we say **ANY**, it means that `carefree-learn` can even train on one single
 import cflearn
 
 toy = cflearn.ml.make_toy_model()
-data = toy.data.converted
+data = toy.data.cf_data.converted
 print(f"x={data.x}, y={data.y}")  # x=[[0.]], y=[[1.]]
 ```
 
@@ -83,10 +83,10 @@ class PlusOne(cflearn.Processor):
         return processed_columns - 1
 
 # we need to specify that we use the custom process method to process our labels
-config = {"data_config": {"label_process_method": "plus_one"}}
-toy = cflearn.ml.make_toy_model(config=config)
-y = toy.data.converted.y
-processed_y = toy.data.processed.y
+toy = cflearn.ml.make_toy_model(cf_data_config={"label_process_method": "plus_one"})
+data = toy.data.cf_data
+y = data.converted.y
+processed_y = data.processed.y
 print(f"y={y}, new_y={processed_y}")  # y=[[1.]], new_y=[[2.]]
 ```
 
@@ -102,20 +102,32 @@ There is one more thing we'd like to mention: `carefree-learn` is *[Pandas](http
     + Supports native `torchvision` datasets.
 
       ```python
-      train_loader, valid_loader = cflearn.cv.get_mnist(transform="to_tensor")
+      data = cflearn.cv.MNISTData(transform="to_tensor")
       ```
       > Currently only `mnist` is supported, but will add more in the future (if needed) !
     + Focuses on the `ImageFolderDataset` for customization, which:
         + Automatically splits the dataset into train & valid.
         + Supports generating labels in parallel, which is very useful when calculating labels is time consuming.
 + `carefree-learn` supports various kinds of `Callback`s, which can be used for saving intermediate visualizations / results.
-    + For instance, `carefree-learn` implements an `ArtifactCallback`, which can dump artifacts elaborately to disk during training.
+    + For instance, `carefree-learn` implements an `ArtifactCallback`, which can dump artifacts to disk elaborately during training.
 
 
 ## Configurations
 
-In most cases, [`Pipeline`](design-principles#pipeline) will be the user interface in `carefree-learn`, which can handle training, evaluating, saving and loading easily.
+In most cases, [`Pipeline`](design-principles#pipeline) will be the (inner) user interface in `carefree-learn`, which can handle training, evaluating, saving and loading easily.
 Therefore, configurations in `carefree-learn` is mostly done by sending args and kwargs to the [`Pipeline`](design-principles#pipeline) module.
+
+In order to provide even better user experience, `carefree-learn` also provides many handy APIs to directly access to corresponding [`Pipeline`](design-principles#pipeline)s or [`Model`](design-principles#model)s. For example, if we want to use `resnet18` model, we can access it with one line of code:
+
+```python
+model = cflearn.api.resnet18_model(1000)
+```
+
+It's also possible to load pretrained-weights by specifying `pretrained=True`:
+
+```python
+model = cflearn.api.resnet18_model(1000, pretrained=True)
+```
 
 :::note
 It is worth mentioning that although `carefree-learn` supports very fine-grained configurations (e.g. supports configuring different optimizers for different parameters, which is a common use case in GANs), it also provides straight forward configurations when the tasks are not so complicated.
@@ -127,7 +139,6 @@ It is worth mentioning that although `carefree-learn` supports very fine-grained
 m = cflearn.cv.CarefreePipeline(
     "gan",
     {"img_size": 28, "in_channels": 1},
-    callback_names="generator",
     optimizer_settings={
         "g_parameters": {
             "optimizer": "adam",
@@ -152,7 +163,6 @@ m = cflearn.cv.CarefreePipeline(
 m = cflearn.cv.CarefreePipeline(
     "gan",
     {"img_size": 28, "in_channels": 1},
-    callback_names="generator",
     optimizer_name="adam",
     scheduler_name="warmup",
 )
@@ -160,6 +170,28 @@ m = cflearn.cv.CarefreePipeline(
 
 </p>
 </details>
+<br />
+
+<details><summary><b>And if we simply want to run a default configuration, we can </b></summary>
+<p>
+
+```python
+m = cflearn.api.vanilla_gan(28)
+```
+
+And the rest will be handled by `carefree-learn`:
+
+```python
+print(m.trainer.optimizer_packs)
+"""
+[OptimizerPack(scope='g_parameters', optimizer_name='adam', scheduler_name='warmup', optimizer_config=None, scheduler_config=None),
+ OptimizerPack(scope='d_parameters', optimizer_name='adam', scheduler_name='warmup', optimizer_config=None, scheduler_config=None)]
+"""
+```
+
+</p>
+</details>
+
 
 :::
 
