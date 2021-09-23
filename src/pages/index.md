@@ -27,7 +27,7 @@ import numpy as np
 
 x = np.random.random([1000, 10])
 y = np.random.random([1000, 1])
-m = cflearn.ml.CarefreePipeline().fit(x, y)
+m = cflearn.api.fit_ml(x, y, carefree=True)
 ```
 
 </TabItem>
@@ -50,26 +50,10 @@ m = cflearn.ml.CarefreePipeline().fit(x, y)
 <TabItem value="users">
 
 ```python
-# MNIST classification task with resnet18
-
-import os
 import cflearn
 
-train_loader, valid_loader = cflearn.cv.get_mnist(transform="to_tensor")
-
-m = cflearn.cv.CarefreePipeline(
-    "clf",
-    {
-        "in_channels": 1,
-        "num_classes": 10,
-        "latent_dim": 512,
-        "encoder1d": "backbone",
-        "encoder1d_configs": {"name": "resnet18"},
-    },
-    loss_name="cross_entropy",
-    metric_names="acc",
-)
-m.fit(train_loader, valid_loader)
+data = cflearn.cv.MNISTData(batch_size=16, transform="to_tensor")
+m = cflearn.api.resnet18_gray(10).fit(data)
 ```
 
 </TabItem>
@@ -114,7 +98,8 @@ From the above, it comes out that `carefree-learn` could be treated as a minimal
 ### Computer Vision 🖼️
 
 + Also provides a [scikit-learn](https://scikit-learn.org/stable/)-like interface with much more 'carefree' usages.
-+ Seamlessly supported `ddp` (simply switch `m.fit(...)` to `m.ddp(...)`)
++ Provides many out-of-the-box pre-trained models and well hand-crafted training defaults for reproduction & finetuning.
++ Seamlessly supports efficient `ddp` (simply call `cflearn.run_ddp("run.py")`, where `run.py` is your normal training script).
 + Bunch of utility functions for research and production.
 
 
@@ -126,7 +111,7 @@ If you use `carefree-learn` in your research, we would greatly appreciate if you
 @misc{carefree-learn,
   year={2020},
   author={Yujian He},
-  title={carefree-learn, a minimal Automatic Machine Learning (AutoML) solution for tabular datasets based on PyTorch},
+  title={carefree-learn, Deep Learning with PyTorch made easy},
   howpublished={\url{https://https://github.com/carefree0910/carefree-learn/}},
 }
 ```
