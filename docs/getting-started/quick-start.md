@@ -128,7 +128,108 @@ m = cflearn.api.resnet18_gray(10)
 </TabItem>
 <TabItem value="custom">
 
-> This is a WIP section :D
+For custom image folder dataset, `carefree-learn` provides a `Preparation`-style API for you to prepare your data. In this demo, we'll show you how to use it for image classification tasks. Suppose we have the following file structure:
+
+```text
+|--- data
+   |--- labels.csv
+   |--- images
+      |-- 0.png
+      |-- 1.png
+      |-- 2.png
+      |-- 3.png
+```
+
+Where `labels.csv` file contains the labels of each image:
+
+```text
+0.png,positive
+1.png,negative
+2.png,positive
+3.png,negative
+```
+
+Then we should define a `Preparation`, which tells `carefree-learn` how to interpret the data:
+
+```python
+import os
+import cflearn
+
+class DemoPreparation(cflearn.DefaultPreparation):
+    def __init__(self):
+        self.labels = {}
+        with open("data/labels.csv", "r") as f:
+            for line in f:
+                k, v = line.strip().split(",")
+                self.labels[k] = v
+
+    def get_label(self, hierarchy):
+        """
+        `hierarchy` is a list of string, representing the file hierarchy.
+        For instance, the `hierarchy` of 0.png will be ["data", "images", "0.png"]
+        """
+        return self.labels[hierarchy[-1]]
+
+
+rs = cflearn.prepare_image_folder_data(
+    "data",
+    "data/gathered",  # This is where you want to put the prepared dataset
+    to_index=True,    # We should turn the original labels ('positive', 'negative') to integer values
+    batch_size=1,
+    preparation=DemoPreparation(),
+    transform="to_tensor",
+)
+```
+
+It's worth mentioning that `carefree-learn` will automatically achieve many common practices for you, such as:
+- Split out validation set properly.
+- Save the mappings between indices and original labels to some `json` files.
+
+:::note
+In addition, for classification tasks, `carefree-learn` will ensure that:
+- The class distribution of validation dataset is the same as the one of training dataset.
+- Validation dataset has at least one sample per class.
+:::
+
+The '**prepared**' file structure will be as follows:
+
+```text
+|--- data
+   |--- gathered
+      |--- train
+         |-- 0.png 
+         |-- 3.png
+         |-- labels.json
+         ...
+      |--- valid
+         |-- 1.png 
+         |-- 2.png
+         |-- labels.json
+         ...
+      |-- idx2labels.json
+      |-- labels2idx.json
+   ...
+```
+
+Where
+
+```json
+{"0": "negative", "1": "positive"}  // idx2labels.json
+{"negative": 0, "positive": 1}      // labels2idx.json
+
+{"/absolute/path/to/0.png": 1, "/absolute/path/to/3.png": 0}  // ./train/labels.json
+{"/absolute/path/to/2.png": 1, "/absolute/path/to/1.png": 0}  // ./valid/labels.json
+```
+
+After the data is prepared, we can define a model to fit it, which is fairly easy for `carefree-learn`:
+
+```python
+m = cflearn.api.resnet18(
+    2,              # We have two classes
+    fixed_steps=1,  # For demo purpose, we only train the model for one step
+)
+m.fit(rs.data)
+```
 
 </TabItem>
 </Tabs>
@@ -138,7 +239,7 @@ m = cflearn.api.resnet18_gray(10)
 
 ### Saving
 
-`carefree-learn` models can be saved easily, into a zip file (for both ml & cv tasks) !
+`carefree-learn` pipelines can be saved easily, into a zip file (for both ml & cv tasks) !
 
 ```python
 m.save("model")  # a `model.zip` file will be created
@@ -168,7 +269,7 @@ cflearn.api.pack("_logs/2021-08-08_17-25-21-803661")
 ```
 
 :::note
-This `pack` API is a '**unified**' API, which means you can use it to serialize either Machine Learning models or Computer Vision models!
+This `pack` API is a '**unified**' API, which means you can use it to serialize either Machine Learning pipelines or Computer Vision pipelines!
 :::
 
 ### Loading
