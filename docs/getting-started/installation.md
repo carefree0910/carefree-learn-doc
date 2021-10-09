@@ -27,6 +27,7 @@ If you pre-installed PyTorch with conda, remember to activate the corresponding 
     {label: 'GitHub', value: 'github'},
   ]
 }>
+
 <TabItem value="pypi">
 
 ```bash
@@ -34,6 +35,7 @@ pip install carefree-learn
 ```
 
 </TabItem>
+
 <TabItem value="github">
 
 ```bash
@@ -43,4 +45,28 @@ pip install -e .
 ```
 
 </TabItem>
+
 </Tabs>
+
+
+## Docker
+
+### Prepare
+
+`carefree-learn` has already been published on DockerHub, so it can be pulled directly:
+
+```bash
+docker pull carefree0910/carefree-learn:dev
+```
+
+or can be built locally:
+
+```bash
+docker build -t carefree0910/carefree-learn:dev .
+```
+
+### Run
+
+```bash
+docker run --rm -it --gpus all carefree0910/carefree-learn:dev
+```
