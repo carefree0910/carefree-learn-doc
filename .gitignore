@@ -9,8 +9,10 @@
 .cache-loader
 
 # Misc
+_*
 .idea
-_logs/*
+*.txt
+data/*
 **/__*/*
 *.zip
 
