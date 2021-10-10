@@ -15,8 +15,7 @@ In `carefree-learn`, there are five main design principles that address this ten
 
 + Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline).
 + Build some [`Common Blocks`](#common-blocks) which shall be leveraged across different [`Model`](#model)s.
-+ Divide `Model` into three parts: [`transform`](#transform), [`extractor`](#extractor) and [`head`](#head), which form a [`pipe`](#pipe).
-+ Implemente functions (`cflearn.register_*` to be exact) to ensure flexibility and control on different modules and stuffs (see [`Registration`](#registration)).
++ Manage models / blocks with `register` mechanism, so they can be accessed via their names (see [`Registration`](#registration)).
 
 We will introduce the details in the following subsections.
 
@@ -25,319 +24,93 @@ We will introduce the details in the following subsections.
 
 > Source code: [blocks.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/modules/blocks.py).
 
-Commonality is important for abstractions. When it comes to deep learning, it is not difficult to figure out the very common structure across all models: the `Mapping` Layers which is responsible for mapping data distrubution from one dimensional to another.
-
-Although some efforts have been made to replace the `Mapping` Layers (e.g. DNDF[^1]), it is undeniable that the `Mapping` Layers should be extracted as a stand-alone module before any other structures. But in `carefree-learn`, we should do more than that.
-
-Recall that `carefree-learn` focuses on tabular datasets, which means `carefree-learn` will use `Mapping` Layers in most cases (Unlike CNN or RNN which has Convolutional Blocks and RNNCell Blocks respectively). In this case, it is necessary to wrap multiple `Mapping`s into one single Module - also well known as `MLP` - in `carefree-learn`. So, in CNN we have `Conv2D`, in RNN we have `LSTM`, and in `carefree-learn` we have `MLP`.
+`carefree-learn` implements many basic blocks which can directly form famous models, such as **VAE**, **AdaIN**, **CycleGAN**, **BERT**, **ViT**, **FNet**, **StyleGAN**, **U^2 Net** etc. The best of `carefree-learn` is that, it not only reproduces the official implementations, but also reuses everything it could. For example:
+- The `Decoder` used in `VAE` and `CycleGAN` is the same (with different args / kwargs).
+- The `Transformer` used in `BERT` and `Vit` is the same (with different args / kwargs).
+- `Transformer` and `FNet` shares most of the codes, except that `Transformer` uses `Attention` but `FNet` uses fourier transform.
+- And much more...
 
 
 ## Configurations
 
-> Source code: [configs.py](https://github.com/carefree0910/carefree-learn/blob/dev/cflearn/configs.py).
+In general, there are three kinds of configurations in `carefree-learn`:
+- Model configurations.
+- Trainer configurations.
+- Pipeline configurations, which is basically constructed by the above two configurations.
 
-`carefree-learn` manages configurations in an elegant way so both [specifying configurations](getting-started/configurations#specify-configurations) and [customizing configurations](developer-guides/customization#configs) could be easy.
+See [specifying configurations](getting-started/configurations#specify-configurations) for more details.
+
+
+## Register Mechanism
+
+> Source code: [`WithRegister`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/misc/toolkit.py#L383).
+
+In `carefree-learn`, it is likely to see `@xxx.register(...)` all around. This is very useful when we want to provide many useful defaults for users.
+
+Here's a code snippet that well demonstrates how to use `register` mechanism:
+
+```python
+from cflearn.misc.toolkit import WithRegister
+
+foo = {}
+
+class FooBase(WithRegister):
+    d = foo
+
+@FooBase.register("bar")
+class Bar(FooBase):
+    def __init__(self, name="foobar"):
+        self.name = name
+
+print(foo["bar"]().name)                             # foobar
+print(FooBase.get("bar")().name)                     # foobar
+print(FooBase.make("bar", {"name": "barfoo"}).name)  # barfoo
+```
 
 
 ## Model
 
-> Source code: [`ModelBase`](https://github.com/carefree0910/carefree-learn/blob/ecdae9702456910b5075d1972de66a4f64ea733a/cflearn/models/base.py#L87).
+> Source code: [`ModelProtocol`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/protocol.py#L109).
 
-In `carefree-learn`, a `Model` should implement the core algorithms.
-
-+ It assumes that the input data in training process is already *batched, processed, nice and clean*, but not yet *encoded*.
-    + Fortunately, `carefree-learn` pre-defined some useful methods which can encode categorical columns easily and **EFFICIENTLY** (see [`Optimizations`](optimizations) for more details)
-+ It does not care about how to train a model, it only focuses on how to make predictions with input, and how to calculate losses with them.
-
-:::note
-`Model` is likely to define `MLP` blocks frequently, as explained in the [Common Blocks](#common-blocks) section.
-:::
-
-One thing we would like to proudly announce is that `carefree-learn` has made an elegant abstraction, namely `pipe`, which is suitable for most of the models which aim at solving tabular tasks:
-
-### `pipe`
-
-Unlike unstructured datasets (CV, NLP, etc), it's hard to inject our prior knowledge into structured datasets because in most cases we simply use `MLP` to solve the problem. Researchers therefore mainly focused on how the improve the *inputs* and the *connections* of the traditional fully-connected ones. Some famous models, such as Wide-and-Deep[^2], Deep-and-Cross[^3], DeepFM[^4], share this common pattern. `carefree-learn` therefore defined `pipe`, which corresponds to one of those *branches* which takes in all / part of the inputs, apply some `transform`, extract some features with `extractor`, and then feed the final network (`head`) with these features. Here's an example (click to zoom in):
-
-[ ![Pipe](../static/img/pipe.png) ](../static/img/pipe.png)
-
-In this model, we have $3$ `pipe`s. The first `pipe` takes in $x_1, x_2$, the second one takes in $x_3$, and the third one takes in $x_3, x_4$. After each `head` finishes its own calculation, we'll go through a `reduce` operation (which is often a `sum`, see [`Aggregator`](#aggregator) for more details) to get the final outputs.
-
-Here are some examples of how to represent different structures with `pipe`:
-
-:::note
-We'll use some concepts of [transform](#transform), [extract](#extract) and [head](#head) below. If you're intrested in some of the details, feel free to navigate to the corresponding section😉
-:::
-
-:::tip
-If you are interested in how to implement these models in `carefree-learn`, you can jump to the [Examples](#examples) section first, and you might be amazed by how simple and clear it could be😆
-:::
-
-<Tabs
-  groupId="models"
-  defaultValue="linear"
-  values={[
-    {label: 'Linear', value: 'linear'},
-    {label: 'FCNN', value: 'fcnn'},
-    {label: 'Wide & Deep', value: 'wnd'},
-    {label: 'RNN', value: 'rnn'},
-    {label: 'Transformer', value: 'transformer'},
-  ]
-}>
-<TabItem value="linear">
-
-A `Linear` model represents a `LinearRegression` (regression tasks) or a `LogisticRegression` / `SoftmaxRegression` (classification tasks), so its representation is fairly easy because it only needs 1 `pipe`:
-
-:::note pipe Linear
-1. `transform` would be a `default` transform.
-2. `extractor` would be an `identity` extractor.
-3. `head` would be an `Linear` head.
-:::
-
-</TabItem>
-<TabItem value="fcnn">
-
-An `FCNN` model is simply a **F**ully **C**onnected **N**eural **N**etwork, and almost the same as `Linear` except its `head` switches to `MLP`:
-
-:::note pipe FCNN
-1. `transform` would be a `default` transform.
-2. `extractor` would be an `identity` extractor.
-3. `head` would be an `MLP` head.
-:::
-
-</TabItem>
-<TabItem value="wnd">
-
-A `Wide & Deep` model basically splits the inputs into two parts, then feed them to a *wide* model and a *deep* model respectively. Concretely, a *wide* model takes in categorical features with `one_hot` encoding, while a *deep* model takes in numerical features and categorical features with `embedding` encoding. Its representation will be a little more complicated because it requires 2 `pipe`s:
-
-:::note pipe wide
-1. `transform` would be a `one_hot_only` transform.
-2. `extractor` would be an `identity` extractor.
-3. `head` would be an `Linear` head.
-:::
-
-:::note pipe deep
-1. `transform` would be a `embedding` transform.
-2. `extractor` would be an `identity` extractor.
-3. `head` would be an `MLP` head.
-:::
-
-</TabItem>
-<TabItem value="rnn">
-
-An `RNN` model represents general **R**ecurrent **N**eural **N**etwork which is suitable for time series tasks. It differs from `FCNN` because it needs to extract the temporal information from the input data, so it should define a special `extractor`, instead of using an `identity` one:
-
-:::note pipe RNN
-1. `transform` would be a `default` transform.
-2. `extractor` would be an `rnn` extractor.
-3. `head` would be an `MLP` head.
-:::
-
-</TabItem>
-<TabItem value="transformer">
-
-A `Transformer` model represents the encoder part of the Transformer model which has been used broadly in NLP tasks. Its representation looks familiar with `RNN`'s, except `Transformer` defines an `extractor` with self attention mechanism:
-
-:::note pipe Transformer
-1. `transform` would be a `default` transform.
-2. `extractor` would be an `transformer` extractor.
-3. `head` would be an `MLP` head.
-:::
-
-</TabItem>
-</Tabs>
-
-### `transform`
-
-In `carefree-learn`, a `transform` refers to *encodings* that handle categorical features. Although there are plenty of encoding methods, we decide to stick to `one_hot` encoding and `embedding` encoding because their performances are already promising enough. Besides, flexibility often means reductions in performance, so sticking to `one_hot` & `embedding` means we can perform better optimizations on them (see [`Optimizations`](optimizations) for more details).
-
-In this case, `carefree-learn` pre-defined 7 types of `transform`, namely:
-+ `default`: use numerical features, `one_hot` & `embedding`.
-+ `one_hot`: use numerical features & `one_hot`.
-+ `embedding`: use numerical features & `embedding`.
-+ `one_hot_only`: use `one_hot` only.
-+ `embedding_only`: use `embedding` only.
-+ `categorical_only`: use `one_hot` & `embedding`.
-+ `numerical`: use numerical features only.
-
-### `extractor`
-
-In most cases `extractor` would simply be `identity` because we can hardly treat tabular datasets as vision datasets or natrual language datasets, since the latter ones often contain prior knowledges. However, there're one case where we often need such step, and that's when we need to resolve a time series task. In such cases, the `rnn` extractor / `transformer` extractor often outshines the `identity` extractor.
-
-### `head`
-
-The terminology `head` actually borrows from CV models where they call the last part of their model a `head`. We're feeling comfortable with this term because the last part of CV models are often `Linear` or `MLP`, which exactly matches our use cases.
-
-### Examples
-
-In this section we'll show how `carefree-learn` implements models under the `pipe` design, and will visualize these implementations with [`draw`](getting-started/quick-start#visualizing) API as well (click to zoom in):
-
-<Tabs
-  groupId="models"
-  defaultValue="linear"
-  values={[
-    {label: 'Linear', value: 'linear'},
-    {label: 'FCNN', value: 'fcnn'},
-    {label: 'Wide & Deep', value: 'wnd'},
-    {label: 'RNN', value: 'rnn'},
-    {label: 'Transformer', value: 'transformer'},
-  ]
-}>
-<TabItem value="linear">
+In `carefree-learn`, a `Model` should implement the core algorithms. It's basically an `nn.Module`, with some extra useful functions:
 
 ```python
-@ModelBase.register_pipe("linear")
-class LinearModel(ModelBase):
-    pass
+class ModelProtocol(nn.Module, WithRegister, metaclass=ABCMeta):
+    d = model_dict
+
+    ...
+
+    @property
+    def device(self) -> torch.device:
+        return list(self.parameters())[0].device
+
+    def onnx_forward(self, batch: tensor_dict_type) -> Any:
+        return self.forward(0, batch)
+
+    def summary_forward(self, batch_idx: int, batch: tensor_dict_type) -> None:
+        self.forward(batch_idx, batch)
 ```
 
-[ ![Linear](../static/img/pipes/linear.png) ](../static/img/pipes/linear.png)
-
-</TabItem>
-<TabItem value="fcnn">
-
-```python
-@ModelBase.register_pipe("fcnn")
-class FCNN(ModelBase):
-    pass
-```
-
-[ ![FCNN](../static/img/pipes/fcnn.png) ](../static/img/pipes/fcnn.png)
-
-</TabItem>
-<TabItem value="wnd">
-
-```python
-@ModelBase.register_pipe("fcnn", transform="embedding")
-@ModelBase.register_pipe("linear", transform="one_hot_only")
-class WideAndDeep(ModelBase):
-    pass
-```
-
-[ ![Wide and Deep](../static/img/pipes/wnd.png) ](../static/img/pipes/wnd.png)
-
-</TabItem>
-<TabItem value="rnn">
-
-```python
-@ModelBase.register_pipe("rnn", head="fcnn")
-class RNN(ModelBase):
-    pass
-```
-
-[ ![RNN](../static/img/pipes/rnn.png) ](../static/img/pipes/rnn.png)
-
-</TabItem>
-<TabItem value="transformer">
-
-```python
-@ModelBase.register_pipe("transformer", head="fcnn")
-class Transformer(ModelBase):
-    pass
-```
-
-[ ![Transformer](../static/img/pipes/transformer.png) ](../static/img/pipes/transformer.png)
-
-</TabItem>
-</Tabs>
-
-...That's right, simply register your `transform`, `extractor` and `head`, then `carefree-learn` will handle the rest for you🥳
-
-:::note
-+ For the Aggregator part, please refer to the next section.
-+ For detailed development guides, please refer to [Build Your Own Models](developer-guides/customization).
-:::
-
-
-## Aggregator
-
-You may have noticed that the visualizations shown above contain an `Aggregator` part. For models with only one [`pipe`](#pipe), the `Aggregator` will just simply output its input. But for models with more than one [`pipe`](#pipe) (e.g. the Wide & Deep model), `Aggregator` will be responsible to aggregate the outputs from different [`pipe`](#pipe). Take this example again (click to zoom in):
-
-[ ![Pipe](../static/img/pipe.png) ](../static/img/pipe.png)
-
-The `Aggregator` actually needs to implement the `Reduce` part as shown at the right-most of the image. As we've mentioned, this is often a `sum` operation, which is exactly what `carefree-learn` has implemented for us:
-
-```python
-@AggregatorBase.register("sum")
-class Sum(AggregatorBase):
-    def reduce(self, outputs: tensor_dict_type, **kwargs: Any) -> tensor_dict_type:
-        values = list(outputs.values())
-        output = None
-        for value in values:
-            if value is None:
-                continue
-            if output is None:
-                output = value
-            else:
-                output = output + value
-        return {"predictions": output}
-```
-
-:::note
-For detailed development guides, please refer to [Customizing New Aggregators](developer-guides/customization#customizing-new-aggregators).
-:::
+As shown above, there are two special `forward` methods defined in a `Model`, which allows us to customize `onnx` export procedure and `summary` procedure respectively.
 
 
 ## Trainer
 
-> Source code: [`Trainer`](https://github.com/carefree0910/carefree-learn/blob/3fb03dbfc3e2b494f2ab03b9d8f07683fe30e7ef/cflearn/trainer.py#L451).
+> Source code: [`Trainer`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/trainer.py#L226).
 
-In `carefree-learn`, a `Trainer` should implement the training parts, as listed below:
+In `carefree-learn`, a `Trainer` should implement the training loop, which includes updating trainable parameters with an optimizer (or, some optimizers), verbosing metrics / losses, checkpointing, early stopping, logging, etc.
 
-+ It assumes that the input data is already *processed, nice and clean*, but it should take care of getting input data into batches, because in real applications batching is essential for performance.
-+ It should take care of the training loop, which includes updating parameters with an optimizer, verbosing metrics, checkpointing, early stopping, logging, etc.
+:::note
+Although we can construct a `Trainer` from scratch, `carefree-learn` provides [`make_trainer`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/misc/internal_/trainer.py#L19) function, which contains many useful default `Trainer` values.
+:::
 
 
 ## Pipeline
 
-> Source code: [`Pipeline`](https://github.com/carefree0910/carefree-learn/blob/3fb03dbfc3e2b494f2ab03b9d8f07683fe30e7ef/cflearn/pipeline.py#L33).
+> Source code: [`DLPipeline`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/pipeline.py#L90).
 
-In `carefree-learn`, a `Pipeline` should implement the high-level parts.
+In `carefree-learn`, a `Pipeline` should implement the high-level parts (e.g. `fit`, `predict`, `save`, `load`, etc.). It's basically a 'wrapper' which can use a [`Trainer`](#trainer) to train a [`Model`](#model) properly, and can serialize the necessary information to disk.
 
-+ It should not make any assumptions to the input data, it could already be *nice and clean*, but it could also be *dirty and messy*. Therefore, it needs to transform the original data into *nice and clean* data and then feed it to `Trainer`. The data transformations include (this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data), though):
-    + Imputation of missing values.
-    + Transforming string columns into categorical columns.
-    + Processing numerical columns.
-    + Processing label column (if needed).
-+ It should implement some algorithm-agnostic functions (e.g. `predict`, `save`, `load`, etc.).
-
-
-## Registration
-
-Registration in `carefree-learn` means registering user-defined modules to `carefree-learn`, so `carefree-learn` can leverage these modules to resolve more specific tasks. In most cases, the registration stuffs are done by simply defining and updating many global `dict`s.
-
-For example, `carefree-learn` defined some useful parameter initializations in `cflearn.misc.toolkit.Initializer`. If we want to use our own initialization methods, simply register it and then everything will be fine:
-
-```python
-import torch
-import cflearn
-
-from torch.nn import Parameter
-
-@cflearn.register_initializer("all_one")
-def all_one(initializer_, parameter):
-    parameter.fill_(1.)
-
-param = Parameter(torch.zeros(3))
-with torch.no_grad():
-    cflearn.Initializer().initialize(param, "all_one")
-print(param)  # tensor([1., 1., 1.], requires_grad=True)
-```
-
-Currently we mainly have 10 kinds of registrations in use:
-+ [`register_model`](developer-guides/customization#constructing-existing-modules)
-+ [`register_pipe`](developer-guides/customization#constructing-existing-modules)
-+ [`register_extractor`](developer-guides/customization#customize-extractor)
-+ [`register_head`](developer-guides/customization#customize-head)
-+ [`register_aggregator`](developer-guides/customization#customizing-new-aggregators)
-+ [`register_config`](developer-guides/customization#configs)
-+ [`register_head_config`](developer-guides/customization#headconfigs)
-+ `register_metric`
-+ `register_initializer`
-+ `register_processor`
-
-
-[^1]: Kontschieder P, Fiterau M, Criminisi A, et al. Deep neural decision forests[C]//Proceedings of the IEEE international conference on computer vision. 2015: 1467-1475. 
-[^2]: Cheng H T, Koc L, Harmsen J, et al. Wide & deep learning for recommender systems[C]//Proceedings of the 1st workshop on deep learning for recommender systems. 2016: 7-10. 
-[^3]: Wang, Ruoxi, et al. “Deep & cross network for ad click predictions.” Proceedings of the ADKDD’17. 2017. 1-7. 
-[^4]: Guo, Huifeng, et al. “Deepfm: An end-to-end wide & deep learning framework for CTR prediction.” 
+:::note
+Although `carefree-learn` focuses on Deep Learning tasks, the most general abstraction ([`PipelineProtocol`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/pipeline.py#L57)) can actually utilize traditional Machine Learning models, such as `LinearRegression` from `scikit-learn`.
+:::
