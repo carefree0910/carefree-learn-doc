@@ -19,6 +19,7 @@ Deep Learning with [PyTorch](https://pytorch.org/) made easy 🚀 !
     {label: 'Developers', value: 'developers'},
   ]
 }>
+
 <TabItem value="users">
 
 ```python
@@ -31,11 +32,13 @@ m = cflearn.api.fit_ml(x, y, carefree=True)
 ```
 
 </TabItem>
+
 <TabItem value="developers">
 
 > This is a WIP section :D
 
 </TabItem>
+
 </Tabs>
 
 ### Computer Vision 🖼️
@@ -47,6 +50,7 @@ m = cflearn.api.fit_ml(x, y, carefree=True)
     {label: 'Developers', value: 'developers'},
   ]
 }>
+
 <TabItem value="users">
 
 ```python
@@ -57,11 +61,13 @@ m = cflearn.api.resnet18_gray(10).fit(data)
 ```
 
 </TabItem>
+
 <TabItem value="developers">
 
 > This is a WIP section :D
 
 </TabItem>
+
 </Tabs>
 
 :::info

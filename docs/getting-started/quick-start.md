@@ -20,6 +20,7 @@ In `carefree-learn`, it's easy to train and serialize a model **for all tasks**.
     {label: 'With File', value: 'file'},
   ]
 }>
+
 <TabItem value="numpy">
 
 ```python
@@ -48,6 +49,7 @@ This yields:
 ```
 
 </TabItem>
+
 <TabItem value="file">
 
 `carefree-learn` can also easily fit / predict / evaluate directly on files (**file-in, file-out**). Suppose we have an `xor.txt` file with following contents:
@@ -102,6 +104,7 @@ print(m.predict(data_base("xor.txt"), contains_labels=True)[key].argmax(1))  # [
 ```
 
 </TabItem>
+
 </Tabs>
 
 
@@ -114,6 +117,7 @@ print(m.predict(data_base("xor.txt"), contains_labels=True)[key].argmax(1))  # [
     {label: 'Custom Image Folder Dataset', value: 'custom'},
   ]
 }>
+
 <TabItem value="preset">
 
 ```python
@@ -126,6 +130,7 @@ m = cflearn.api.resnet18_gray(10)
 ```
 
 </TabItem>
+
 <TabItem value="custom">
 
 For custom image folder dataset, `carefree-learn` provides a `Preparation`-style API for you to prepare your data. In this demo, we'll show you how to use it for image classification tasks. Suppose we have the following file structure:
@@ -232,6 +237,7 @@ m.fit(rs.data)
 ```
 
 </TabItem>
+
 </Tabs>
 
 

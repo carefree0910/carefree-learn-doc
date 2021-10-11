@@ -114,7 +114,7 @@ There is one more thing we'd like to mention: `carefree-learn` is *[Pandas](http
 
 ## Configurations
 
-In most cases, [`Pipeline`](design-principles#pipeline) will be the (inner) user interface in `carefree-learn`, which can handle training, evaluating, saving and loading easily.
+In most cases, [`Pipeline`](design-principles#pipeline) will be the (internal) user interface in `carefree-learn`, which can handle training, evaluating, saving and loading easily.
 Therefore, configurations in `carefree-learn` is mostly done by sending args and kwargs to the [`Pipeline`](design-principles#pipeline) module.
 
 In order to provide even better user experience, `carefree-learn` also provides many handy APIs to directly access to corresponding [`Pipeline`](design-principles#pipeline)s or [`Model`](design-principles#model)s. For example, if we want to use `resnet18` model, we can access it with one line of code:
