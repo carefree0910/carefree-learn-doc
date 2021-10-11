@@ -8,403 +8,432 @@ import TabItem from '@theme/TabItem';
 
 Although it is possible to get a rather good performance with default configurations, performance might be gained easily by specifying configurations with our prior knowledges.
 
-We've already mentioned the basic ideas on how to configure `carefree-learn` in [`Introduction`](../#configurations), so we will focus on introducing how to actually configure `Environment` in this page. 
-
-
-## Environment
-
-In many high-level Machine Learning modules (e.g. [scikit-learn](https://scikit-learn.org/stable/)), configurations are directly specified by using args and kwargs to instantiate an object of the corresponding algorithm. In `carefree-learn`, however, since we've wrapped many procedures together (in [`Pipeline`](../design-principles#pipeline)) to provide a more *carefree* usage, we cannot put all those configurations in the definition of the class because that will be too much and too messy. Instead, we will share an `Environment` instance across different components to specify their configurations.
-
-There are several advantages by doing so, as listed below:
-
-+ It's much more flexible and easier to extend.
-+ It's much easier to reproduce other's work, because a single JSON file will be enough.
-+ It's much easier to share configurations between different modules. This is especially helpful in `carefree-learn` because we've tried hard to do elegant abstractions, which lead us to implement many individual modules to handle different problems. In this case, some *global* information will be hard to access if we don't share configurations.
-
-:::info
-In most cases we won't instantiate an `Environment` instance explicitly, but will leverage [High Level APIs](#high-level-apis) (e.g. [Elements](#elements) & [cflearn.make](#make)) to make things easier and clearer.
-:::
+We've already mentioned the basic ideas on how to configure `carefree-learn` in [`Introduction`](../#configurations), so we will focus on introducing how to actually configure `Pipeline`s in this page. 
 
 
 ## Specify Configurations
 
-There are two ways to specify configurations in `carefree-learn`: directly with a Python dict or indirectly with a JSON file.
+There are three ways to specify configurations in `carefree-learn`:
+- Construct a `Pipeline` from scratch.
+- Leverage `DLZoo` to construct a `Pipeline` with a JSON file.
+- Utilize `cflearn.api` (**recommended!**).
+
+Let's say we want to construct a `Pipeline` to train `resnet18` on MNIST dataset, here are three different ways to achieve this:
 
 <Tabs
-  defaultValue="dict"
+  defaultValue="scratch"
   values={[
-    {label: 'Python dict', value: 'dict'},
-    {label: 'JSON file', value: 'json'},
+    {label: 'From Scratch', value: 'scratch'},
+    {label: 'DLZoo', value: 'zoo'},
+    {label: 'cflearn.api', value: 'api'},
   ]
 }>
-<TabItem value="dict">
+
+<TabItem value="scratch">
 
 ```python
-import cflearn
-
-# specify any configurations
-config = {"foo": 0, "dummy": 1}
-fcnn = cflearn.make(**config)
-
-assert fcnn.foo == 0
-assert fcnn.dummy == 1
+m = cflearn.cv.CarefreePipeline(
+    "clf",
+    {
+        "in_channels": 1,
+        "num_classes": 10,
+        "latent_dim": 512,
+        "encoder1d": "backbone",
+        "encoder1d_config": {
+            "name": "resnet18",
+            "pretrained": False,
+        },
+    },
+    loss_name="cross_entropy",
+    metric_names="acc",
+)
 ```
 
 </TabItem>
-<TabItem value="json">
 
-In order to use a JSON file as configuration, suppose you want to run `my_script.py`, and it contains the following codes:
-
-```python
-import cflearn
-
-config = "./configs/basic.json"
-increment_config = {"foo": 2}
-fcnn = cflearn.make(config=config, increment_config=increment_config)
-```
-
-Since `config` is set to `"./configs/basic.json"`, the file structure should be:
-
-```text
--- my_script.py
--- configs
- |-- basic.json
-```
-
-Suppose `basic.json` contains following stuffs:
-
-```json
-{
-    "foo": 0,
-    "dummy": 1
-}
-```
-
-Then we should have:
+<TabItem value="zoo">
 
 ```python
-assert fcnn.foo == 2
-assert fcnn.dummy == 1
-```
-
-It is OK to get rid of `increment_config`, in which case the configuration will be completely controlled by `basic.json`:
-
-```python
-import cflearn
-
-config = "./configs/basic.json"
-fcnn = cflearn.make(config=config)
-
-assert fcnn.foo == 0
-assert fcnn.dummy == 1
+m = cflearn.DLZoo.load_pipeline("clf/resnet18.gray", num_classes=10)
 ```
 
 </TabItem>
+
+<TabItem value="api">
+
+```python
+m = cflearn.api.resnet18_gray(10)
+```
+
+</TabItem>
+
 </Tabs>
 
+We'll describe some details in the following sections.
 
-## High Level APIs
+### Configure from Scratch
 
-In order to manage default configurations, `carefree-learn` introduced `Elements`, which is a `NamedTuple`, to organize the logics. With the help of `Elements`, defining high-level APIs could be fairly easy and straight forward.
+Since `carefree-learn` exposed almost every parameter to users, we can actually control every part of the `Pipeline` through args and kwargs of `__init__`.
 
 :::info
-`Elements` is more of an internal structure used by [make](#make) API than an external API, but we can also use it directly, as shown in the [Example](#example) section.
+Although Machine Learning, Computer Vision and Natural Language Processing are very different, they share many things in common when they are solved by Deep Learning. Therefore in `carefree-learn`, we implement `DLPipeline` to handle these shared stuffs.
 :::
 
-### Elements
-
-Since some fields in `Elements` need to be inferenced with other information, their `default` values are ones assigned in `Elements.make`.
-
 ```python
-class Elements(NamedTuple):
-    model: str = "fcnn"
-    aggregator: str = "sum"
-    aggregator_config: Optional[Dict[str, Any]] = None
-    data_config: Optional[Dict[str, Any]] = None
-    task_type: Optional[task_type_type] = None
-    use_simplify_data: bool = False
-    ts_config: Optional[TimeSeriesConfig] = None
-    aggregation: Optional[str] = None
-    aggregation_config: Optional[Dict[str, Any]] = None
-    ts_label_collator_config: Optional[Dict[str, Any]] = None
-    delim: Optional[str] = None
-    has_column_names: Optional[bool] = None
-    read_config: Optional[Dict[str, Any]] = None
-    logging_folder: Optional[str] = None
-    logging_file: Optional[str] = None
-    batch_size: int = 128
-    cv_split: Optional[Union[float, int]] = None
-    use_amp: bool = False
-    min_epoch: Optional[int] = None
-    num_epoch: Optional[int] = None
-    max_epoch: Optional[int] = None
-    fixed_epoch: Optional[int] = None
-    max_snapshot_file: int = 5
-    clip_norm: float = 0.0
-    ema_decay: float = 0.0
-    model_config: Optional[Dict[str, Any]] = None
-    loss: str = "auto"
-    loss_config: Optional[Dict[str, Any]] = None
-    default_encoding_init_method: Optional[str] = None
-    metrics: Union[str, List[str]] = "auto"
-    metric_config: Optional[Dict[str, Any]] = None
-    lr: Optional[float] = None
-    optimizer: Optional[str] = "adamw"
-    scheduler: Optional[str] = "warmup"
-    optimizer_config: Optional[Dict[str, Any]] = None
-    scheduler_config: Optional[Dict[str, Any]] = None
-    optimizers: Optional[Dict[str, Any]] = None
-    verbose_level: int = 2
-    use_tqdm: bool = True
-    trigger_logging: bool = False
-    cuda: Optional[Union[int, str]] = None
-    mlflow_config: Optional[Dict[str, Any]] = None
-    extra_config: Optional[Dict[str, Any]] = None
+class DLPipeline(PipelineProtocol, metaclass=ABCMeta):
+    def __init__(
+        self,
+        *,
+        loss_name: str,
+        loss_config: Optional[Dict[str, Any]] = None,
+        # trainer
+        state_config: Optional[Dict[str, Any]] = None,
+        num_epoch: int = 40,
+        max_epoch: int = 1000,
+        fixed_epoch: Optional[int] = None,
+        fixed_steps: Optional[int] = None,
+        log_steps: Optional[int] = None,
+        valid_portion: float = 1.0,
+        amp: bool = False,
+        clip_norm: float = 0.0,
+        cudnn_benchmark: bool = False,
+        metric_names: Optional[Union[str, List[str]]] = None,
+        metric_configs: Optional[Dict[str, Any]] = None,
+        use_losses_as_metrics: Optional[bool] = None,
+        loss_metrics_weights: Optional[Dict[str, float]] = None,
+        recompute_train_losses_in_eval: bool = True,
+        monitor_names: Optional[Union[str, List[str]]] = None,
+        monitor_configs: Optional[Dict[str, Any]] = None,
+        callback_names: Optional[Union[str, List[str]]] = None,
+        callback_configs: Optional[Dict[str, Any]] = None,
+        lr: Optional[float] = None,
+        optimizer_name: Optional[str] = None,
+        scheduler_name: Optional[str] = None,
+        optimizer_config: Optional[Dict[str, Any]] = None,
+        scheduler_config: Optional[Dict[str, Any]] = None,
+        optimizer_settings: Optional[Dict[str, Dict[str, Any]]] = None,
+        workplace: str = "_logs",
+        finetune_config: Optional[Dict[str, Any]] = None,
+        tqdm_settings: Optional[Dict[str, Any]] = None,
+        # misc
+        in_loading: bool = False,
+    )
 ```
 
-+ **`model`** [default = `"fcnn"`]
-    + Specify which model we're going to use.
-    + Currently `carefree-learn` supports:
-        + `"linear"`, `"fcnn"`, `"wnd"`, `"nnb"`, `"ndt"`, `"tree_linear"`, `"tree_stack"`, `"tree_dnn"` and `"ddr"` for basic usages.
-        + `"rnn"` and `"transformer"` for time series usages.
-+ **`aggregator`** [default = `"sum"`]
-    + Specify the [`Aggregator`](../design-principles#aggregator) we're going to use.
-+ **`aggregator_config`** [default = `{}`]
-    + Specify the config for the [`Aggregator`](../design-principles#aggregator).
-+ **`data_config`** [default = `{}`]
-    + kwargs used in [`cfdata.tabular.TabularData`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L31).
-+ **`task_type`** [default = `None`]
-    + Specify the task type.
-        + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
-+ **`use_simplify_data`** [default = `False`]
-    + Specify whether use a simplified `TabularData` (without any pre-processing).
-+ **`ts_config`** [default = `None`]
-    + Specify the time series config (experimental).
-+ **`aggregation`** [default = `None`]
-    + Specify the aggregation used in time series tasks (experimental).
-+ **`aggregation_config`** [default = `None`]
-    + Specify the configuration of aggregation used in time series tasks (experimental).
-+ **`ts_label_collator_config`** [default = `None`]
-    + Specify the configuration of the label collator used in time series tasks (experimental).
-+ **`delim`** [default = `None`]
-    + Specify the delimiter of the dataset file.
-        + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
-    + Only take effects when we are using file datasets.
-+ **`has_column_names`** [default = `None`]
-    + Specify whether the elements of the first row are column names.
-        + If not provided, `carefree-learn` will try to inference it with the help of `carefree-data`.
-    + Only take effects when we are using file datasets.
-+ **`read_config`** [default = `{}`]
-    + kwargs used in [`cfdata.tabular.TabularData.read`](https://github.com/carefree0910/carefree-data/blob/82f158be82ced404a1f4ac37e7a669a50470b109/cfdata/tabular/wrapper.py#L769).
-+ **`logging_folder`** [default = `None`]
-    + Specify the logging folder.
-    + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`logging_file`** [default = `None`]
-    + Specify the logging file.
-    + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`batch_size`** [default = `128`]
-    + Specify the number of samples in each batch.
-+ **`cv_split`** [default = `None`]
-    + Specify the split of the cross validation dataset.
-        + If `cv_split < 1`, it will be the 'ratio' comparing to the whole dataset.
-        + If `cv_split > 1`, it will be the exact 'size'.
-        + If `cv_split == 1`, `cv_split == "ratio" if isinstance(cv_split, float) else "size"`
-    + If not provided, `carefree-learn` will try to inference it with `min_cv_split`, `max_cv_split` and `max_cv_split_ratio`. See [cv_split](#cv_split) for more details.
-+ **`use_amp`** [default = `False`]
-    + Specify whether use the [`amp`](https://pytorch.org/docs/stable/amp.html) technique or not.
-+ **`min_epoch`** [default = `0`]
-    + Specify the minimum number of epoch.
++ **`loss_name`**
+    + Loss that we'll use for training.
+    + Currently `carefree-learn` supports
+        + Common losses: `mae`, `mse`, `quantile`, `cross_entropy`, `focal`, ...
+        + Task specific losses: `vae`, `vqvae`, ...
++ **`loss_config`** [default = `{}`]
+    + Configurations of the corresponding loss.
++ **`state_config`** [default = `{}`]
+    + Configurations of the [`TrainerState`](#trainerstate).
 + **`num_epoch`** [default = `40`]
-    + Specify number of epoch. 
+    + Specify number of epochs. 
     + Notice that in most cases this will not be the final epoch number.
-+ **`max_epoch`** [default = `200`]
-    + Specify the maximum number of epoch.
++ **`max_epoch`** [default = `1000`]
+    + Specify the maximum number of epochs.
 + **`fixed_epoch`** [default = `None`]
-    + Specify the (fixed) number of epoch.
-    + If sepcified, then `min_epoch`, `num_epoch` and `max_epoch` will all be set to it.
-+ **`max_snapshot_file`** [default = `5`]
-    + Specify the maximum number of checkpoint files we could save during training.
+    + Specify the (fixed) number of epochs.
+    + If sepcified, then `num_epoch` and `max_epoch` will all be set to it.
++ **`fixed_steps`** [default = `None`]
+    + Specify the (fixed) number of steps.
++ **`log_steps`** [default = `None`]
+    + Specify the (fixed) number of steps to do loggings.
++ **`valid_portion`** [default = `1.0`]
+    + Specify how much data from validation set do we want to use for monitoring.
++ **`amp`** [default = `False`]
+    + Specify whether use the [`amp`](https://pytorch.org/docs/stable/amp.html) technique or not.
 + **`clip_norm`** [default = `0.0`]
     + Given a gradient `g`, and the **`clip_norm`** value, we will normalize `g` so that its L2-norm is less than or equal to **`clip_norm`**.
     + If `0.0`, then no gradient clip will be performed.
-+ **`ema_decay`** [default = `0.0`]
-    + When training a model, it is often beneficial to maintain **E**xponential **M**oving **A**verages with a certain decay rate (**`ema_decay`**) of the trained parameters. Evaluations that use averaged parameters sometimes produce significantly better results than the final trained values.
-    + If `0.0`, then no EMA will be used.
-+ **`model_config`** [default = `{}`]
-    + Configurations used in [`Model`](../design-principles#model).
-+ **`loss`** [default = `"auto"`]
-    + Loss that we'll use for training.
-    + Currently `carefree-learn` supports `mae`, `mse`, `quantile`, `cross_entropy`, `label_smooth_cross_entropy` and `focal`.
-+ **`loss_config`** [default = `None`]
-    + Configurations of the corresponding loss.
-+ **`default_encoding_init_method`** [default = `None`]
-    + Default init method for encoding.
-+ **`metrics`** [default = `"auto"`]
-    + Specify which metric(s) are we going to use to monitor our training process
-+ **`metric_config`** [default = `{}`]
-    + Specify the fine grained configurations of metrics. See [`metrics`](#metrics) for more details.
++ **`cudnn_benchmark`** [default = `False`]
+    + Specify whether use the [`cudnn.benchmark`](https://pytorch.org/docs/stable/backends.html) technique or not.
++ **`metric_names`** [default = `None`]
+    + Specify what metrics do we want to use for monitoring.
+    + If `None`, then no metrics will be used, and losses will be treated as metrics.
++ **`metric_configs`** [default = `{}`]
+    + Configurations of the corresponding metrics.
++ **`use_losses_as_metrics`** [default = `None`]
+    + Specify whether use losses as metrics or not.
+    + It will always be `True` if `metric_names` is `None`.
++ **`loss_metrics_weights`** [default = `None`]
+    + Specify the weight of each loss when they are used as metrics.
++ **`recompute_train_losses_in_eval`** [default = `True`]
+    + Specify whether should we recompute losses on training set in monitor steps when validation set is not provided.
++ **`monitor_names`** [default = `None`]
+    + Specify what monitors do we want to use for monitoring.
+    + If `None`, then [`BasicMonitor`](#basicmonitor) will be used.
++ **`monitor_configs`** [default = `{}`]
+    + Configurations of the corresponding monitors.
++ **`callback_names`** [default = `None`]
+    + Specify what callbacks do we want to use during training.
+    + If `None`, then [`_LogMetricsMsgCallback`](#_logmetricsmsgcallback) will be used.
++ **`callback_configs`** [default = `{}`]
+    + Configurations of the corresponding callbacks.
 + **`lr`** [default = `None`]
     + Default learning rate.
     + If not specified, `carefree-learn` will try to infer the best default value.
-+ **`optimizer`** [default = `"adam"`]
++ **`optimizer_name`** [default = `"None"`]
     + Specify which optimizer will be used.
-+ **`scheduler`** [default = `"plateau"`]
+    + If not specified, `carefree-learn` will try to infer the best default value.
++ **`scheduler_name`** [default = `"None"`]
     + Specify which learning rate scheduler will be used.
+    + If not specified, `carefree-learn` will try to infer the best default value.
 + **`optimizer_config`** [default = `{}`]
-    + Specify optimizer's configuration.
+    + Specify the optimizer's configuration.
 + **`scheduler_config`** [default = `{}`]
-    + Specify scheduler's configuration.
-+ **`optimizers`** [default = `{}`]
-    + Specify the fine grained configurations of optimizers and schedulers. See [`optimizers`](#optimizers) for more details.
-+ **`verbose_level`** [default = `2`]
-    + Specify the verbose level.
-+ **`use_tqdm`** [default = `True`]
-    + Whether utilize the `tqdm` progress bar or not.
-+ **`trigger_logging`** [default = `False`]
-    + Whether log messages into a log file.
-+ **`cuda`** [default = `None`]
-    + Specify the working GPU.
-    + If not provided, `carefree-learn` will try to inference it automatically.
-+ **`mlflow_config`** [default = `None`]
-    + Specify the configuration of `mlflow`.
-    + If `None`, then we will not utilize `mlflow`.
-+ **`extra_config`** [default = `{}`]
-    + Other configurations.
+    + Specify the scheduler's configuration.
++ **`optimizer_settings`** [default = `None`]
+    + Specify the fine grained configurations of optimizers and schedulers.
+    + We should not specify `optimizer_name`, ... if we want to specify `optimizer_settings`.
+    + See [`OptimizerPack`](#optimizerpack) for more details.
++ **`workplace`** [default = `"_logs"`]
+    + Specify the workplace of the whole training process.
+    + In general, `carefree-learn` will create a folder (with timestamp as its name) in the workplace, and will dump everything generated in the training process to it.
++ **`finetune_config`** [default = `None`]
+    + Specify the finetune configurations.
+    + If `None`, then we'll not utilize the finetune mechanism supported by `carefree-learn`.
+    + See [`finetune_config`](#finetune_config) for more details.
++ **`tqdm_settings`** [default = `None`]
+    + Specify the `tqdm` configurations.
+    + See [`TqdmSettings`](#tqdmsettings) for more details.
++ **`in_loading`** [default = `False`]
+    + In most cases this is an internal property handled by `carefree-learn` itself.
 
-### make
+### Configure `DLZoo`
 
-In order to provide out of the box tools, `carefree-learn` implements high level APIs for training, evaluating, distributed, HPO, etc. In this section we'll introduce `cflearn.make` because [other APIs](../user-guides/apis#cflearnapibasic) depend on it more or less.
+Since it will be tedious to re-define similar configurations over and over, `carefree-learn` provides `DLZoo` to improve user experience. Internally, `DLZoo` will read configurations from `cflearn/api/zoo/configs`, which contains a bunch of JSON files:
 
 ```python
-def make(
-    model: str = "fcnn",
-    config: general_config_type = None,
-    increment_config: general_config_type = None,
-    **kwargs: Any,
-) -> Pipeline:
-    kwargs["model"] = model
-    parsed_config = update_dict(_parse_config(config), kwargs)
-    parsed_increment_config = _parse_config(increment_config)
-    return Pipeline.make(parsed_config, parsed_increment_config)
+# This will read the  cflearn/api/zoo/configs/clf/resnet18/default.json  file
+m = cflearn.DLZoo.load_pipeline("clf/resnet18", num_classes=10)
+# This will read the  cflearn/api/zoo/configs/clf/resnet18/gray.json     file
+m = cflearn.DLZoo.load_pipeline("clf/resnet18.gray", num_classes=10)
 ```
 
-Notice that we've used `Pipeline.make`, whose definition is:
+### Configure `cflearn.api`
+
+Since `DLZoo` mainly depends on JSON files which cannot provide useful auto-completion, `carefree-learn` further provides `cflearn.api`, which is a thin wrapper of `DLZoo`, as the recommended user interface.
+
+Configuring `cflearn.api` will be exactly the same as configuring `DLZoo`, except that it can utilize auto-completion which significantly improves user experience.
 
 ```python
-@classmethod
-def make(
-    cls,
-    config: Dict[str, Any],
-    increment_config: Dict[str, Any],
-) -> "Pipeline":
-    return cls(Environment.from_elements(Elements.make(config, increment_config)))
-```
-
-The reason why we introduce the `make` API is that we hope we can provide APIs as *carefree* as possible. So we've listed the most commonly used configurations in `Elements`, and supported users to specify them through `kwargs` (which is the most intuitive way) in `make`.
-
-:::info
-The correspondence between `make` and `Elements` is illustrated in the [Example](#example) section.
-:::
-
-For example, if we want to switch our device to `"cpu"`, we can simply:
-
-```python
-import cflearn
-
-m = cflearn.make(cuda="cpu")
-print(m.device)  # cpu
-```
-
-### Example
-
-As mentioned above, in most cases we can simply use the [`make`](#make) API, but we can also use [`Elements`](#elements) directly. For instance, the following snippet
-
-```python
-import cflearn
-
-m = cflearn.make(cuda="cpu")
-print(m.device)  # cpu
-```
-
-is equivalent to
-
-```python
-from cflearn.configs import *
-from cflearn.pipeline import Pipeline
-
-elements = Elements(cuda="cpu")
-environment = Environment.from_elements(elements)
-m = Pipeline(environment)
-print(m.device)  # cpu
+m = cflearn.api.resnet18_gray(10, metric_names="acc")
 ```
 
 
 ## Configuration Details
 
-:::caution
-This section is a work in progress.
+### `make_multiple` mechanism
+
+> This mechanism is based on the [`Register Mechanism`](../design-principles#register-mechanism).
+
+`make_multiple` mechanism is useful when we need to use either one single instance or multiple instances (e.g. use one metric / use multiple metrics to monitor the training process):
++ When we need one single instance, only one single name (`str`) and the corresponding config is required.
++ When we need multiple instances, their names (`List[str]`) are required, and the configs should be a dictionary, where:
+    + The keys should be the names.
+    + The values should be the corresponding configs.
+
+The source codes well demonstrate how it works:
+
+```python
+@classmethod
+def make_multiple(
+    cls,
+    names: Union[str, List[str]],
+    configs: configs_type = None,
+) -> Union[T, List[T]]:
+    if configs is None:
+        configs = {}
+    if isinstance(names, str):
+        assert isinstance(configs, dict)
+        return cls.make(names, configs)  # type: ignore
+    if not isinstance(configs, list):
+        configs = [configs.get(name, {}) for name in names]
+    return [
+        cls.make(name, shallow_copy_dict(config))
+        for name, config in zip(names, configs)
+    ]
+```
+
+### `TrainerState`
+
+```python
+class TrainerState:
+    def __init__(
+        self,
+        loader: DataLoaderProtocol,
+        *,
+        num_epoch: int,
+        max_epoch: int,
+        fixed_steps: Optional[int] = None,
+        extension: int = 5,
+        enable_logging: bool = True,
+        min_num_sample: int = 3000,
+        snapshot_start_step: Optional[int] = None,
+        max_snapshot_file: int = 5,
+        num_snapshot_per_epoch: int = 2,
+        num_step_per_log: int = 350,
+        num_step_per_snapshot: Optional[int] = None,
+        max_step_per_snapshot: int = 1000,
+    )
+```
+
++ **`loader`**
+    + This will be handled by `carefree-learn` internally.
++ **`num_epoch`**
+    + Specify number of epochs. 
+    + Notice that in most cases this will not be the final epoch number.
++ **`max_epoch`**
+    + Specify the maximum number of epochs.
++ **`fixed_steps`** [default = `None`]
+    + Specify the (fixed) number of steps.
++ **`extension`** [default = `None`]
+    + Specify the number of the extended epochs per extension.
+    + So basically, we'll not extend the epoch for more than $$\frac{\mathrm{max\_epoch}-\mathrm{num\_epoch}}{\mathrm{extension}}$$ times.
++ **`enable_logging`** [default = `True`]
+    + Whether enable logging stuffs or not.
++ **`min_num_sample`** [default = `3000`]
+    + We'll not start monitoring until the model has already seen `min_num_sample` samples.
+    + This can avoid monitors from stopping too early, when the model is still trying to optimize its initial state.
++ **`snapshot_start_step`** [default = `None`]
+    + Specify the number of steps when we start to take snapshots.
+    + If not specified, `carefree-learn` will try to infer the best default value.
++ **`max_snapshot_file`** [default = `5`]
+    + Specify the maximum number of checkpoint files we could save during training.
++ **`num_snapshot_per_epoch`** [default = `2`]
+    + Indicates how many snapshots we would like to take per epoch.
+    + The final behaviour will be affected by `max_step_per_snapshot`.
++ **`num_step_per_log`** [default = `350`]
+    + Indicates the number of steps of each logging period.
++ **`num_step_per_snapshot`** [default = `None`]
+    + Specify the number of steps of each snapshot period.
+    + If not specified, `carefree-learn` will try to infer the best default value.
++ **`max_step_per_snapshot`** [default = `1000`]
+    + Specify the maximum number of steps of each snapshot period.
+
+### `BasicMonitor`
+
+This is the default monitor of `carefree-learn`. It's fairly simple, but quite useful in practice:
++ It will take a snapshot when SOTA is achieved.
++ It will terminate the training after `patience` steps, if the new score is even worse than the worst score.
++ It will not punish extension
+
+:::info
+So in most cases, `BasicMonitor` will not early-stop until `max_epoch` is reached.
 :::
 
-In this section we'll introduce some default configurations used in `carefree-learn`, as well as how to configure them (with some examples). The default settings have already been tuned on variety tabular datasets and should be able to achieve a good performance, as mentioned at the beginning.
+```python
+@TrainerMonitor.register("basic")
+class BasicMonitor(TrainerMonitor):
+    def __init__(self, patience: int = 25):
+        super().__init__()
+        self.patience = patience
+        self.num_snapshot = 0
+        self.best_score = -math.inf
+        self.worst_score: Optional[float] = None
 
-### metrics
+    def snapshot(self, new_score: float) -> bool:
+        self.num_snapshot += 1
+        if self.worst_score is None:
+            self.worst_score = new_score
+        else:
+            self.worst_score = min(new_score, self.worst_score)
+        if new_score > self.best_score:
+            self.best_score = new_score
+            return True
+        return False
 
-By default:
-+ `mae` & `mse` is used for regression tasks, while `auc` & `acc` is used for classification tasks.
-+ An EMA with `decay = 0.1` will be used.
-+ Every metric will be treated as equal. 
+    def check_terminate(self, new_score: float) -> bool:
+        if self.num_snapshot <= self.patience:
+            return False
+        if self.worst_score is None:
+            return False
+        return new_score <= self.worst_score
 
-So `carefree-learn` will construct the following configurations for you (take classification tasks as an example):
-
-```json
-{
-    ...,
-    "trainer_config": {
-        ...,
-        "metric_config": {
-            "decay": 0.1,
-            "types": ["auc", "acc"],
-            "weights": {"auc": 1.0, "acc": 1.0}
-        }
-    }
-}
+    def punish_extension(self) -> None:
+        return None
 ```
 
-It's worth mentioning that `carefree-learn` also supports using losses as metrics:
+### `_LogMetricsMsgCallback`
 
-```json
-{
-    ...,
-    "trainer_config": {
-        ...,
-        "metric_config": {
-            "decay": 0.1,
-            "types": ["loss"]
-        }
-    }
-}
+This is the default callback of `carefree-learn`. It will report the validation metrics to the console periodically, along with the current steps / epochs, and the execution time since last report. It will also write these information to disk.
+
+:::info
+When writing to disk, `_LogMetricsMsgCallback` will also write the `lr` (learning rate) of the corresponding steps.
+:::
+
+### `OptimizerPack`
+
+```python
+class OptimizerPack(NamedTuple):
+    scope: str
+    optimizer_name: str
+    scheduler_name: Optional[str] = None
+    optimizer_config: Optional[Dict[str, Any]] = None
+    scheduler_config: Optional[Dict[str, Any]] = None
 ```
 
-### optimizers
++ **`scope`**
+    + Specify the parameter 'scope' of this pack.
+    + If `scope="all"`, all trainable parameters will be considered.
+    + Else, it represents the attribute of the model, and:
+        + If this attribute is an `nn.Module`, then its parameters will be considered.
+        + Else, this attribute should be a list of parameters, which will be considered.
++ **`optimizer_name`**
+    + Specify which optimizer will be used.
++ **`scheduler_name`** [default = `"None"`]
+    + Specify which learning rate scheduler will be used.
+    + If not specified, no scheduler will be used.
++ **`optimizer_config`** [default = `{}`]
+    + Specify optimizer's configuration.
++ **`scheduler_config`** [default = `{}`]
+    + Specify scheduler's configuration.
 
-By default, **all** parameters will be optimized via one single optimizer, so `carefree-learn` will construct the following configurations for you:
+Since directly constructing `OptimizerPack`s will be troublesome, `carefree-learn` provides many convenient interface for users to specify optimizer settings. For instance, these configurations will have same effects:
 
-```json
-{
+<Tabs
+  defaultValue="kwargs"
+  values={[
+    {label: 'Via `kwargs`', value: 'kwargs'},
+    {label: 'Via `optimizer_settings`', value: 'settings'},
+  ]
+}>
+
+<TabItem value="kwargs">
+
+```python
+m = cflearn.cv.CarefreePipeline(
     ...,
-    "trainer_config": {
-        ...,
-        "optimizers": {
-            "all": {
-                "optimizer": "adamw",
-                "optimizer_config": {"lr": 1e-3},
-                "scheduler": "plateau",
-                "scheduler_config": {"mode": "max", ...}
-            }
-        }
-    }
-}
+    lr=1.0e-3,
+    optimizer_name="adamw",
+    scheduler_name="plateau",
+    optimizer_config={"weight_decay": 1.0e-3},
+)
 ```
+
+</TabItem>
+
+<TabItem value="settings">
+
+```python
+m = cflearn.cv.CarefreePipeline(
+    ...,
+    optimizer_settings={
+        "all": dict(
+            optimizer_name="adamw",
+            scheduler_name="plateau",
+            optimizer_config={"lr": 1.0e-3, "weight_decay": 1.0e-3},
+        ),
+    },
+)
+```
+
+</TabItem>
+
+</Tabs>
 
 If we need to apply different optimizers on different parameters (which is quite common in GANs), we need to walk through the following two steps:
 
@@ -427,43 +456,73 @@ class Foo(cflearn.ModelBase):
         return [self.p1, self.p3, ...]
 ```
 
-```json
-{
+```python
+m = cflearn.cv.CarefreePipeline(
     ...,
-    "trainer_config": {
-        ...,
-        "optimizers": {
-            "params1": {
-                "optimizer": "adam",
-                "optimizer_config": {"lr": 3e-4},
-                "scheduler": null
-            },
-            "params2": {
-                "optimizer": "nag",
-                "optimizer_config": {"lr": 1e-3, "momentum": 0.9},
-                "scheduler": "plateau",
-                "scheduler_config": {"mode": "max", ...}
-            }
-        }
-    }
-}
+    optimizer_settings={
+        "params1": {
+            "optimizer": "adam",
+            "optimizer_config": {"lr": 3.0e-4},
+            "scheduler": None,
+        },
+        "params2": {
+            "optimizer": "nag",
+            "optimizer_config": {"lr": 1.0e-3, "momentum": 0.9},
+            "scheduler": "plateau",
+            "scheduler_config": {"mode": "max", ...},
+        },
+    },
+)
 ```
 
-### cv_split
+### `finetune_config`
 
-It is important to split out a cross validation dataset from the training dataset if it is not explicitly provided, because a cv set could help us monitor the generalization error, hence prevent overfitting. However, unlike unstructured datasets, the sample number of tabular datasets could vary dramatically (roughly $10^2$ ~ $10^8$). Therefore, it is not trivial to decide how many samples should we use for cross validation. In `carefree-learn`, we use `min_cv_split`, `max_cv_split` and `max_cv_split_ratio` to help us make this decision automatically:
+> Source code: [`_init_finetune`](https://github.com/carefree0910/carefree-learn/blob/d039183c803f23266101b65c3863528e97940bc8/cflearn/trainer.py#L435).
+
+`carefree-learn` supports finetune mechanism, and we can specify:
++ The initial states we want to start training from.
++ What parameters should we freeze / train during the finetune process, and Regex is supported!
+
+#### Example
 
 ```python
-default_cv_split = 0.1
-cv_split_num = int(round(default_cv_split * num_data))
-cv_split_num = max(self.min_cv_split, cv_split_num)
-max_cv_split = int(round(num_data * self.max_cv_split_ratio))
-max_cv_split = min(self.max_cv_split, max_cv_split)
-return min(cv_split_num, max_cv_split)
+m = cflearn.api.u2net(
+    ...,
+    finetune_config={
+        "pretrained_ckpt": "/path/to/your/pretrained.pt",
+        # We'll freeze the parameters whose name follows the regex expression
+        "freeze": "some.regex.expression",
+        # We'll freeze the parameters whose name doesn't follow the regex expression
+        "freeze_except": "some.regex.expression",
+    },
+)
 ```
 
-:::note default settings
-+ `min_cv_split`: 100
-+ `max_cv_split`: 10000
-+ `max_cv_split_ratio`: 0.5
+:::info
+`freeze` & `freeze_except` should not be provided simultaneously
 :::
+
+### `TqdmSettings`
+
+```python
+class TqdmSettings(NamedTuple):
+    use_tqdm: bool = False
+    use_step_tqdm: bool = False
+    use_tqdm_in_validation: bool = False
+    in_distributed: bool = False
+    position: int = 0
+    desc: str = "epoch"
+```
+
++ **`use_tqdm`** [default = `False`]
+    + Whether enable `tqdm` progress bar or not.
++ **`use_step_tqdm`** [default = `False`]
+    + Whether enable `tqdm` progress bar on steps or not.
++ **`use_tqdm_in_validation`** [default = `False`]
+    + Whether enable `tqdm` progress bar in validation procedure or not.
++ **`in_distributed`** [default = `False`]
+    + This will be handled by `carefree-learn` internally.
++ **`position`** [default = `0`]
+    + This will be handled by `carefree-learn` internally.
++ **`desc`** [default = `"epoch"`]
+    + This will be handled by `carefree-learn` internally.
