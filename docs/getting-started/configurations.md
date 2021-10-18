@@ -71,12 +71,14 @@ m = cflearn.api.resnet18_gray(10)
 
 We'll describe some details in the following sections.
 
-### Configure from Scratch
+### `DLPipeline`
 
 Since `carefree-learn` exposed almost every parameter to users, we can actually control every part of the `Pipeline` through args and kwargs of `__init__`.
 
-:::info
 Although Machine Learning, Computer Vision and Natural Language Processing are very different, they share many things in common when they are solved by Deep Learning. Therefore in `carefree-learn`, we implement `DLPipeline` to handle these shared stuffs.
+
+:::note
+The `DLPipeline` serves as the base class of all `Pipeline`s, and for specific domain, we need to inherit `DLPipeline` and implement its own `Pipeline` class.
 :::
 
 ```python
@@ -202,6 +204,131 @@ class DLPipeline(PipelineProtocol, metaclass=ABCMeta):
 + **`in_loading`** [default = `False`]
     + In most cases this is an internal property handled by `carefree-learn` itself.
 
+### `dl.SimplePipeline`
+
+This `Pipeline` aims to solve general deep learning tasks.
+
+```python
+@DLPipeline.register("dl.simple")
+class SimplePipeline(DLPipeline):
+    def __init__(
+        self,
+        model_name: str,
+        model_config: Dict[str, Any],
+        *,
+        # The rest is the same as `DLPipeline`
+```
+
++ **`model_name`**
+    + Model that we'll use for training.
++ **`model_config`** [default = `{}`]
+    + Configurations of the corresponding model.
+
+### `dl.CarefreePipeline`
+
+This `Pipeline` will provide some useful default settings on top of [`dl.SimplePipeline`](#dlsimplepipeline).
+
+```python
+@DLPipeline.register("dl.carefree")
+class CarefreePipeline(SimplePipeline):
+    def __init__(
+        self,
+        # The rest is the same as `dl.SimplePipeline`
+```
+
+### `cv.SimplePipeline`
+
+This `Pipeline` is exactly the same as [`dl.SimplePipeline`](#dlsimplepipeline), just an alias.
+
+### `cv.CarefreePipeline`
+
+This `Pipeline` is exactly the same as [`dl.CarefreePipeline`](#dlcarefreepipeline), just an alias.
+
+### `ml.SimplePipeline`
+
+This `Pipeline` aims to solve tabular tasks. It will always use `MLModel` as its model, and we can only specify the `core` of the `MLModel`.
+
+:::info
+The reason why `carefree-learn` does so is that in tabular tasks, there are many common practices which shall be applied everytime, such as:
++ Encode the categorical columns (to `one_hot` / `embedding` format, required).
++ Pre-process the numerical columns (with `min_max` / `normalize` / ... method, optional).
++ Decide the binary threshold in binary classification tasks.
++ ......
+
+In order to prevent users from re-implementing these stuffs over and over again, `carefree-learn` decides to provide `MLModel` which wraps everything up. In this case, we can focus on the core algorithms, without concerning the rest.
+:::
+
+```python
+@DLPipeline.register("ml.simple")
+class SimplePipeline(DLPipeline):
+    def __init__(
+        self,
+        core_name: str = "fcnn",
+        core_config: Optional[Dict[str, Any]] = None,
+        *,
+        input_dim: Optional[int] = None,
+        output_dim: Optional[int] = None,
+        loss_name: str = "auto",
+        loss_config: Optional[Dict[str, Any]] = None,
+        # encoder
+        only_categorical: bool = False,
+        encoder_config: Optional[Dict[str, Any]] = None,
+        encoding_methods: Optional[Dict[str, List[str]]] = None,
+        encoding_configs: Optional[Dict[str, Dict[str, Any]]] = None,
+        default_encoding_methods: Optional[List[str]] = None,
+        default_encoding_configs: Optional[Dict[str, Any]] = None,
+        # misc
+        pre_process_batch: bool = True,
+        num_repeat: Optional[int] = None,
+        # The rest is the same as `DLPipeline`
+```
+
++ **`core_name`** [default = `"fcnn"`]
+    + Core of `MLModel` that we'll use for training.
++ **`core_config`** [default = `{}`]
+    + Configurations of the corresponding core.
++ **`input_dim`** [default = `None`]
+    + Input dimension of the task.
+    + If not provided, then `cf_data` should be provided in `MLData` which we want to train on.
++ **`output_dim`** [default = `None`]
+    + Output dimension of the task.
+    + If not provided, then `cf_data` should be provided in `MLData` which we want to train on.
++ **`loss_name`** [default = `"auto"`]
+    + Loss that we'll use for training.
+    + As default (`"auto"`), `carefree-learn` will use:
+        + `"mae"` for regression tasks.
+        + `"focal"` for classification tasks.
++ **`loss_config`** [default = `{}`]
+    + Configurations of the corresponding loss.
++ **`only_categorical`** [default = `False`]
+    + Specify whether all columns in the task are categorical columns or not.
++ **`encoder_config`** [default = `{}`]
+    + Configurations of `Encoder`.
++ **`encoding_methods`** [default = `None`]
+    + Encoding methods we will use to encode the categorical columns.
++ **`encoding_configs`** [default = `{}`]
+    + Configurations of the corresponding methods.
++ **`default_encoding_methods`** [default = `["embedding"]`]
+    + Default encoding methods we will use to encode the categorical columns.
++ **`default_encoding_configs`** [default = `{}`]
+    + Default configurations of the corresponding methods.
++ **`pre_process_batch`** [default = `False`]
+    + Specify whether should we pre-process the input batch or not.
++ **`num_repeat`** [default = `None`]
+    + In most cases this is an internal property handled by `carefree-learn` itself.
+
+### `ml.CarefreePipeline`
+
+This `Pipeline` will provide some useful default settings on top of [`ml.SimplePipeline`](#mlsimplepipeline).
+
+```python
+@DLPipeline.register("ml.carefree")
+class CarefreePipeline(SimplePipeline):
+    def __init__(
+        self,
+        # The rest is the same as `ml.SimplePipeline`
+```
+
 ### Configure `DLZoo`
 
 Since it will be tedious to re-define similar configurations over and over, `carefree-learn` provides `DLZoo` to improve user experience. Internally, `DLZoo` will read configurations from `cflearn/api/zoo/configs`, which contains a bunch of JSON files:
@@ -212,6 +339,112 @@ m = cflearn.DLZoo.load_pipeline("clf/resnet18", num_classes=10)
 # This will read the  cflearn/api/zoo/configs/clf/resnet18/gray.json     file
 m = cflearn.DLZoo.load_pipeline("clf/resnet18.gray", num_classes=10)
 ```
+
+The general usage of `DLZoo` should be as follows:
+
+```python
+m = cflearn.DLZoo.load_pipeline("task/model.type", **kwargs)
+```
+
++ **`task`**
+    + Specify the task we want to work with.
+    + See [Supported Models](#supported-models) for more details.
++ **`model`**
+    + Specify the model we want to use.
+    + See [Supported Models](#supported-models) for more details.
++ **`type`**
+    + Specify the model type we want to use.
+    + If not provided, we will use `default` as the model type.
++ **`kwargs`**
+    + Specify the keyword arguments of the `Pipeline`, described above.
+    + See [Example](#example) section for more details.
+
+#### `__requires__`
+
+Although `carefree-learn` wants to make everything as easy as possible, there are still some properties that `carefree-learn` cannot make decisions for you (e.g. `img_size`, `num_classes`, etc.). These properties will be presented in the `__requires__` field of each JSON file.
+
+For example, in `resnet18`, we will need you to provide the `num_classes` property, so the corresponding JSON file will be:
+
+```json
+{
+  "__requires__": {
+    "model_config": ["num_classes"]
+  },
+  ...
+}
+```
+
+Which means we need to specify `num_classes` if we want to use `resnet18`:
+
+```python
+m = cflearn.DLZoo.load_pipeline("clf/resnet18", num_classes=10)
+```
+
+:::info
+In fact, the 'original' configuration should be:
+
+```python
+m = cflearn.DLZoo.load_pipeline("clf/resnet18", model_config=dict(num_classes=10))
+```
+
+Because `num_classes` should be defined under the `model_config` scope.
+
+Since this is quite troublesome, we decided to allow users to specify these 'requirements' directly by the names, which makes `DLZoo` more readable and easier to use!
+:::
+
+#### Example
+
+The following two code snippets have same effects:
+
+<Tabs
+  defaultValue="scratch"
+  values={[
+    {label: 'From Scratch', value: 'scratch'},
+    {label: 'DLZoo', value: 'zoo'},
+  ]
+}>
+
+<TabItem value="scratch">
+
+```python {3-7}
+m = cflearn.cv.CarefreePipeline(
+    "clf",
+    model_config={
+        "num_classes": 10,
+        ...
+    },
+    loss_name="focal",
+    ...
+)
+```
+
+</TabItem>
+
+<TabItem value="zoo">
+
+```python {3-7}
+m = cflearn.DLZoo.load_pipeline(
+    "clf/resnet18.gray",
+    model_config={
+        "num_classes": 10,
+        ...
+    },
+    loss_name="focal",
+    ...
+)
+```
+
+</TabItem>
+
+<TabItem value="api">
+
+```python
+m = cflearn.api.resnet18_gray(10)
+```
+
+</TabItem>
+
+</Tabs>
 
 ### Configure `cflearn.api`
 
@@ -526,3 +759,280 @@ class TqdmSettings(NamedTuple):
     + This will be handled by `carefree-learn` internally.
 + **`desc`** [default = `"epoch"`]
     + This will be handled by `carefree-learn` internally.
+
+
+## Supported Models
+
+:::info
+In this section, we will:
++ Use `load` to represent `cflearn.DLZoo.load_pipeline`.
++ Use `key=...` to represent the `__requires__` field.
+:::
+
+:::tip
+It's also recommended to browse the `cflearn/api/zoo/configs` folder, from which you can see all the JSON files that represent the corresponding supported models.
+:::
+
+### `clf`
+
+#### `cct`
+##### default
+```python
+# cflearn/api/zoo/configs/clf/cct/default.json
+m = load("clf/cct", img_size=..., num_classes=...)
+```
+##### large
+```python
+# cflearn/api/zoo/configs/clf/cct/large.json
+m = load("clf/cct.large", img_size=..., num_classes=...)
+```
+##### large_224
+```python
+# cflearn/api/zoo/configs/clf/cct/large_224.json
+m = load("clf/cct.large_224", num_classes=...)
+```
+##### large_384
+```python
+# cflearn/api/zoo/configs/clf/cct/large_384.json
+m = load("clf/cct.large_384", num_classes=...)
+```
+##### lite
+```python
+# cflearn/api/zoo/configs/clf/cct/lite.json
+m = load("clf/cct.lite", img_size=..., num_classes=...)
+```
+
+#### `resnet101`
+##### default
+```python
+# cflearn/api/zoo/configs/clf/resnet101/default.json
+m = load("clf/resnet101", num_classes=...)
+```
+
+#### `resnet18`
+##### default
+```python
+# cflearn/api/zoo/configs/clf/resnet18/default.json
+m = load("clf/resnet18", num_classes=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/clf/resnet18/gray.json
+m = load("clf/resnet18.gray", num_classes=...)
+```
+
+### `gan`
+
+#### `siren`
+##### default
+```python
+# cflearn/api/zoo/configs/gan/siren/default.json
+m = load("gan/siren", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/gan/siren/gray.json
+m = load("gan/siren.gray", img_size=...)
+```
+
+#### `vanilla`
+##### default
+```python
+# cflearn/api/zoo/configs/gan/vanilla/default.json
+m = load("gan/vanilla", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/gan/vanilla/gray.json
+m = load("gan/vanilla.gray", img_size=...)
+```
+
+### `generator`
+
+#### `cycle_gan_generator`
+##### default
+```python
+# cflearn/api/zoo/configs/generator/cycle_gan_generator/default.json
+m = load("generator/cycle_gan_generator")
+```
+
+#### `pixel_cnn`
+##### default
+```python
+# cflearn/api/zoo/configs/generator/pixel_cnn/default.json
+m = load("generator/pixel_cnn", num_classes=...)
+```
+
+#### `style_gan2_generator`
+##### 1024
+```python
+# cflearn/api/zoo/configs/generator/style_gan2_generator/1024.json
+m = load("generator/style_gan2_generator.1024")
+```
+##### default
+```python
+# cflearn/api/zoo/configs/generator/style_gan2_generator/default.json
+m = load("generator/style_gan2_generator")
+```
+##### ffhq
+```python
+# cflearn/api/zoo/configs/generator/style_gan2_generator/ffhq.json
+m = load("generator/style_gan2_generator.ffhq")
+```
+##### metfaces
+```python
+# cflearn/api/zoo/configs/generator/style_gan2_generator/metfaces.json
+m = load("generator/style_gan2_generator.metfaces")
+```
+
+#### `vqgan_generator`
+##### default
+```python
+# cflearn/api/zoo/configs/generator/vqgan_generator/default.json
+m = load("generator/vqgan_generator")
+```
+
+### `multimodal`
+
+#### `clip`
+##### default
+```python
+# cflearn/api/zoo/configs/multimodal/clip/default.json
+m = load("multimodal/clip")
+```
+
+#### `clip_vqgan_aligner`
+##### default
+```python
+# cflearn/api/zoo/configs/multimodal/clip_vqgan_aligner/default.json
+m = load("multimodal/clip_vqgan_aligner")
+```
+
+### `segmentor`
+
+#### `aim`
+##### default
+```python
+# cflearn/api/zoo/configs/segmentor/aim/default.json
+m = load("segmentor/aim")
+```
+
+#### `u2net`
+##### default
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/default.json
+m = load("segmentor/u2net")
+```
+##### finetune
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/finetune.json
+m = load("segmentor/u2net.finetune", pretrained_ckpt=...)
+```
+##### finetune_lite
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/finetune_lite.json
+m = load("segmentor/u2net.finetune_lite", pretrained_ckpt=...)
+```
+##### lite
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/lite.json
+m = load("segmentor/u2net.lite")
+```
+##### refine
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/refine.json
+m = load("segmentor/u2net.refine", lv1_model_ckpt_path=...)
+```
+##### refine_lite
+```python
+# cflearn/api/zoo/configs/segmentor/u2net/refine_lite.json
+m = load("segmentor/u2net.refine_lite", lv1_model_ckpt_path=...)
+```
+
+### `ssl`
+
+#### `dino`
+##### default
+```python
+# cflearn/api/zoo/configs/ssl/dino/default.json
+m = load("ssl/dino", img_size=...)
+```
+
+### `style_transfer`
+
+#### `adain`
+##### default
+```python
+# cflearn/api/zoo/configs/style_transfer/adain/default.json
+m = load("style_transfer/adain")
+```
+
+### `vae`
+
+#### `siren`
+##### default
+```python
+# cflearn/api/zoo/configs/vae/siren/default.json
+m = load("vae/siren", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/vae/siren/gray.json
+m = load("vae/siren.gray", img_size=...)
+```
+
+#### `style`
+##### default
+```python
+# cflearn/api/zoo/configs/vae/style/default.json
+m = load("vae/style", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/vae/style/gray.json
+m = load("vae/style.gray", img_size=...)
+```
+
+#### `vanilla`
+##### 2d
+```python
+# cflearn/api/zoo/configs/vae/vanilla/2d.json
+m = load("vae/vanilla.2d", img_size=...)
+```
+##### 2d_gray
+```python
+# cflearn/api/zoo/configs/vae/vanilla/2d_gray.json
+m = load("vae/vanilla.2d_gray", img_size=...)
+```
+##### default
+```python
+# cflearn/api/zoo/configs/vae/vanilla/default.json
+m = load("vae/vanilla", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/vae/vanilla/gray.json
+m = load("vae/vanilla.gray", img_size=...)
+```
+
+#### `vq`
+##### default
+```python
+# cflearn/api/zoo/configs/vae/vq/default.json
+m = load("vae/vq", img_size=...)
+```
+##### gray
+```python
+# cflearn/api/zoo/configs/vae/vq/gray.json
+m = load("vae/vq.gray", img_size=...)
+```
+##### gray_lite
+```python
+# cflearn/api/zoo/configs/vae/vq/gray_lite.json
+m = load("vae/vq.gray_lite", img_size=...)
+```
+##### lite
+```python
+# cflearn/api/zoo/configs/vae/vq/lite.json
+m = load("vae/vq.lite", img_size=...)
+```

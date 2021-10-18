@@ -58,7 +58,7 @@ This is especially useful when we need to do unittests or to verify whether our 
 <details><summary><b>For example</b></summary>
 <p>
 
-```python
+```python {19,22}
 import cflearn
 import numpy as np
 
@@ -135,7 +135,7 @@ It is worth mentioning that although `carefree-learn` supports very fine-grained
 <details><summary><b>For instance, in GAN tasks, we may need to</b></summary>
 <p>
 
-```python
+```python {5-12}
 m = cflearn.cv.CarefreePipeline(
     "gan",
     {"img_size": 28, "in_channels": 1},
@@ -159,7 +159,7 @@ m = cflearn.cv.CarefreePipeline(
 <details><summary><b>But in 'simple' tasks, we may only need to</b></summary>
 <p>
 
-```python
+```python {4-5}
 m = cflearn.cv.CarefreePipeline(
     "gan",
     {"img_size": 28, "in_channels": 1},
@@ -192,7 +192,10 @@ print(m.trainer.optimizer_packs)
 </p>
 </details>
 
+:::
 
+:::info
+Please refer to the [Configurations](getting-started/configurations) section for further details.
 :::
 
 

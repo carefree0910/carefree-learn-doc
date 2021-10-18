@@ -70,6 +70,7 @@ y_train = None
 x_train = x_valid = "xor.txt"
 args = x_train, y_train, x_valid
 data_config = {"read_config": dict(delim=",", has_column_names=False)}
+# `carefree` should be set to True when fitting files
 m = cflearn.api.fit_ml(*args, carefree=True, data_config=data_config)
 # `contains_labels` is set to True because we're evaluating on training set
 inference_data = cflearn.ml.MLInferenceData("xor.txt")
