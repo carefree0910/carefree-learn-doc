@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[4],{69:function(e){e.exports=JSON.parse('{"allTagsPath":"/carefree-learn-doc/blog/tags","slug":"carefree-learn","name":"carefree-learn","count":1,"permalink":"/carefree-learn-doc/blog/tags/carefree-learn"}')}}]);
