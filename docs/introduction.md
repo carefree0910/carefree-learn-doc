@@ -16,7 +16,7 @@ Like many similar projects, `carefree-learn` can be treated as a high-level libr
   > And CV came before NLP because I'm more familiar with it 🤣.
 + `carefree-learn` is **highly customizable** for developers. We have already wrapped (almost) every single functionality / process into a single module (a Python class), and they can be replaced or enhanced either directly from source codes or from local codes with the help of some pre-defined functions provided by `carefree-learn` (see [`Registration`](design-principles#registration)).
 + `carefree-learn` supports easy-to-use saving and loading. By default, everything will be wrapped into a `.zip` file, and `onnx` format is natively supported!
-+ `carefree-learn` supports [`Distributed Training`](user-guides/distributed#distributed-training).
++ `carefree-learn` supports Distributed Training.
 
 Apart from these, `carefree-learn` also has quite a few specific advantages in each area:
 
@@ -221,7 +221,7 @@ Although we know that RAM speed is (almost) always faster than I/O operations, w
 
 + Tabular datasets are often quite small and are able to put into RAM once and for all.
 + Network structures for tabular datasets are often much smaller, which means using multi-process loading will cause a much heavier overhead.
-+ We need to take [`Distributed Training`](user-guides/distributed#distributed-training) into account. If we stick to multi-process loading, there would be too many threads in the pool which is not a good practice.
++ We need to take Distributed Training into account. If we stick to multi-process loading, there would be too many threads in the pool which is not a good practice.
 
 
 ## Terminologies
