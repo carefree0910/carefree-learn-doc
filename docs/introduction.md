@@ -5,7 +5,7 @@ slug: /
 ---
 
 [ ![Framework](../static/img/framework.png) ](../static/img/framework.png)
-*Framework of carefree-learn (click to zoom in)*
+*Framework of carefree-learn*
 
 
 ## Advantages
@@ -15,7 +15,7 @@ Like many similar projects, `carefree-learn` can be treated as a high-level libr
 + `carefree-learn` once focused on tabular (structured) datasets (`v0.1.x`), and since `v0.2.x`, unstructured datasets (e.g. CV datasets or NLP datasets) are also supported with ❤️ as well!
   > And CV came before NLP because I'm more familiar with it 🤣.
 + `carefree-learn` is **highly customizable** for developers. We have already wrapped (almost) every single functionality / process into a single module (a Python class), and they can be replaced or enhanced either directly from source codes or from local codes with the help of some pre-defined functions provided by `carefree-learn` (see [`Registration`](design-principles#registration)).
-+ `carefree-learn` supports easy-to-use saving and loading. By default, everything will be wrapped into a zip file, and `onnx` format is natively supported!
++ `carefree-learn` supports easy-to-use saving and loading. By default, everything will be wrapped into a `.zip` file, and `onnx` format is natively supported!
 + `carefree-learn` supports [`Distributed Training`](user-guides/distributed#distributed-training).
 
 Apart from these, `carefree-learn` also has quite a few specific advantages in each area:

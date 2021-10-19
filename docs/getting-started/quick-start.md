@@ -227,6 +227,10 @@ Where
 {"/absolute/path/to/2.png": 1, "/absolute/path/to/1.png": 0}  // ./valid/labels.json
 ```
 
+:::tip
+See [ImageFolderData](../user-guides/computer-vision#imagefolderdata) for more details.
+:::
+
 After the data is prepared, we can define a model to fit it, which is fairly easy for `carefree-learn`:
 
 ```python
@@ -246,7 +250,7 @@ m.fit(rs.data)
 
 ### Saving
 
-`carefree-learn` pipelines can be saved easily, into a zip file (for both ml & cv tasks) !
+`carefree-learn` pipelines can be saved easily, into a `.zip` file (for both ml & cv tasks) !
 
 ```python
 m.save("model")  # a `model.zip` file will be created
@@ -269,7 +273,7 @@ It's worth mentioning that `carefree-learn` supports a two-stage style serializi
   ...
 ```
 
-2. `carefree-learn` could therefore 'pack' the corresponding (timestamp) folder into a zip file.
+2. `carefree-learn` could therefore 'pack' the corresponding (timestamp) folder into a `.zip` file.
 
 ```python
 cflearn.api.pack("_logs/2021-08-08_17-25-21-803661")
@@ -289,6 +293,6 @@ m = cflearn.api.load("/path/to/your/zip/file")
 
 :::note
 + This is also a '**unified**' API.
-+ zip file exported from either `save` API or `pack` API can be loaded in this way.
++ `.zip` file exported from either `save` API or `pack` API can be loaded in this way.
 + Please refer to the [Production](../user-guides/production) section for production usages.
 :::

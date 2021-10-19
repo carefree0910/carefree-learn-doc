@@ -71,7 +71,7 @@ m = cflearn.api.resnet18_gray(10).fit(data)
 </Tabs>
 
 :::info
-Please refer to [Quick Start](docs/getting-started/quick-start) and [Build Your Own Models](docs/developer-guides/customization) for detailed information.
+Please refer to [Quick Start](docs/getting-started/quick-start) and [Developer Guides](docs/developer-guides/general) for detailed information.
 :::
 
 

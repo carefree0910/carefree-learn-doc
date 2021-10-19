@@ -258,7 +258,7 @@ After finished running with this, we should be able to see the following file st
       |-- ...
 ```
 
-As we expected, `carefree-learn` models are saved into zip files, while scikit-learn models are saved into `sk_model.pkl` files. Since these models are not yet loaded, we should manually load them into our environment:
+As we expected, `carefree-learn` models are saved into `.zip` files, while scikit-learn models are saved into `sk_model.pkl` files. Since these models are not yet loaded, we should manually load them into our environment:
 
 ```python
 import os
@@ -359,7 +359,7 @@ Which yields
 
 Bravo! Our AutoML model beats the scikit-learn models 🥳
 
-If we are satisfied with the results, we can pack the models up into a zip file
+If we are satisfied with the results, we can pack the models up into a `.zip` file
 
 ```python
 # This will generate a pack.zip file.

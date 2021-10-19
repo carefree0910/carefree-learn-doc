@@ -12,14 +12,14 @@ module.exports = {
       "examples/Operations"
     ],
     "User Guides": [
-      "user-guides/apis",
-      "user-guides/auto-ml",
-      "user-guides/distributed",
-      "user-guides/production",
-      "user-guides/mlflow"
+      "user-guides/general",
+      "user-guides/computer-vision",
+      "user-guides/machine-learning"
     ],
     "Developer Guides": [
-      "developer-guides/customization",
+      "developer-guides/general-customization",
+      "developer-guides/computer-vision-customization",
+      "developer-guides/machine-learning-customization",
       "developer-guides/contributing",
       "developer-guides/code-of-conduct"
     ],

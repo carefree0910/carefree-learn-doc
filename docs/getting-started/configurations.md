@@ -493,6 +493,8 @@ def make_multiple(
 
 ### `TrainerState`
 
+> Source code: [protocol.py](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/protocol.py#L195)
+
 ```python
 class TrainerState:
     def __init__(
@@ -549,6 +551,8 @@ class TrainerState:
 
 ### `BasicMonitor`
 
+> Source code: [monitors.py](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/misc/internal_/monitors.py#L9).
+
 This is the default monitor of `carefree-learn`. It's fairly simple, but quite useful in practice:
 + It will take a snapshot when SOTA is achieved.
 + It will terminate the training after `patience` steps, if the new score is even worse than the worst score.
@@ -591,6 +595,8 @@ class BasicMonitor(TrainerMonitor):
 ```
 
 ### `_LogMetricsMsgCallback`
+
+> Source code: [general.py](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/misc/internal_/callbacks/general.py#L34).
 
 This is the default callback of `carefree-learn`. It will report the validation metrics to the console periodically, along with the current steps / epochs, and the execution time since last report. It will also write these information to disk.
 

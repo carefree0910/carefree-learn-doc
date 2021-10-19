@@ -3,9 +3,6 @@ id: design-principles
 title: Design Principles
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 `carefree-learn` was designed to support most commonly used methods with *carefree* APIs. Moreover, `carefree-learn` was also designed with interface which is general enough, so that more sophisticated functionality can also be easily integrated in the future. This brings a tension in how to create abstractions in code, which is a challenge for us:
 
 + On the one hand, it requires a reasonably high-level abstraction so that users can easily work around with it in a standard way, without having to worry too much about the details.
@@ -15,7 +12,7 @@ In `carefree-learn`, there are five main design principles that address this ten
 
 + Divide `carefree-learn` into three parts: [`Model`](#model), [`Trainer`](#trainer) and [`Pipeline`](#pipeline).
 + Build some [`Common Blocks`](#common-blocks) which shall be leveraged across different [`Model`](#model)s.
-+ Manage models / blocks with `register` mechanism, so they can be accessed via their names (see [`Registration`](#registration)).
++ Manage models / blocks with `register` mechanism, so they can be accessed via their names (see [Register Mechanism](#register-mechanism)).
 
 We will introduce the details in the following subsections.
 
@@ -93,6 +90,10 @@ class ModelProtocol(nn.Module, WithRegister, metaclass=ABCMeta):
 
 As shown above, there are two special `forward` methods defined in a `Model`, which allows us to customize `onnx` export procedure and `summary` procedure respectively.
 
+:::tip
+See [ModelProtocol](developer-guides/general-customization#modelprotocol) section for more details.
+:::
+
 
 ## Trainer
 
@@ -109,7 +110,7 @@ Although we can construct a `Trainer` from scratch, `carefree-learn` provides [`
 
 > Source code: [`DLPipeline`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/pipeline.py#L90).
 
-In `carefree-learn`, a `Pipeline` should implement the high-level parts (e.g. `fit`, `predict`, `save`, `load`, etc.). It's basically a 'wrapper' which can use a [`Trainer`](#trainer) to train a [`Model`](#model) properly, and can serialize the necessary information to disk.
+In `carefree-learn`, a `Pipeline` should implement the high-level parts (e.g. `fit`, `predict`, `save`, `load`, etc.), and will be the (internal) user interface. It's basically a 'wrapper' which can use a [`Trainer`](#trainer) to train a [`Model`](#model) properly, and can serialize the necessary information to disk.
 
 :::note
 Although `carefree-learn` focuses on Deep Learning tasks, the most general abstraction ([`PipelineProtocol`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/pipeline.py#L57)) can actually utilize traditional Machine Learning models, such as `LinearRegression` from `scikit-learn`.
