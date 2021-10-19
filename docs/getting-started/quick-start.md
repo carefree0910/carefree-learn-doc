@@ -294,5 +294,4 @@ m = cflearn.api.load("/path/to/your/zip/file")
 :::note
 + This is also a '**unified**' API.
 + `.zip` file exported from either `save` API or `pack` API can be loaded in this way.
-+ Please refer to the [Production](../user-guides/production) section for production usages.
 :::

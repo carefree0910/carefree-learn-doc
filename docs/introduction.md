@@ -204,7 +204,7 @@ Please refer to the [Configurations](getting-started/configurations) section for
 As shown in the framework at the beginning of this page, `carefree-learn` is mainly constructed with 5 loose coupled modules:
 + `Data Layer`: this part is mainly handled by [`carefree-data`](https://github.com/carefree0910/carefree-data) & `DataLoader` (from `PyTorch`) for Machine Learning 📈 & Computer Vision 🖼️ tasks respectively.
 + [`Model`](design-principles#model): should implement the core algorithms (basically it should implement the `forward` method).
-+ [`Inference`](https://github.com/carefree0910/carefree-learn/blob/3d2bf377ada0b5c8c85c79d5be13d723e64cb3dc/cflearn/protocol.py#L367): it is responsible for making inference. It should be able to work w/ or w/o a [`Model`](design-principles#model), where for the latter case it will use `ONNX` instead (see [here](user-guides/production) for more information).
++ [`Inference`](https://github.com/carefree0910/carefree-learn/blob/3d2bf377ada0b5c8c85c79d5be13d723e64cb3dc/cflearn/protocol.py#L367): it is responsible for making inference. It should be able to work w/ or w/o a [`Model`](design-principles#model), where for the latter case it will use `ONNX` instead.
 + [`Trainer`](https://github.com/carefree0910/carefree-learn/blob/f5e3d92a4ad5a4e320397f66253804e43839fc41/cflearn/trainer.py#L352): it will train a [`Model`](design-principles#model) with specific training data loader & validation data loader.
 + [`Pipeline`](design-principles#pipeline): as mentioned above, it serves as the user interface in `carefree-learn`.
 

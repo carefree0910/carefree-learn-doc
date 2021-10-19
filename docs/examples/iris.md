@@ -119,7 +119,7 @@ Which yields
 
 ## Benchmarking
 
-As we know, neural networks are trained with **_stochastic_** gradient descent (and its variants), which will introduce some randomness to the final result, even if we are training on the same dataset. In this case, we need to repeat the same task several times in order to obtain the bias & variance of our neural networks. Fortunately, `carefree-learn` introduced [`repeat_with`](../user-guides/distributed#repeat_with) API, which can achieve this goal easily with only a few lines of code:
+As we know, neural networks are trained with **_stochastic_** gradient descent (and its variants), which will introduce some randomness to the final result, even if we are training on the same dataset. In this case, we need to repeat the same task several times in order to obtain the bias & variance of our neural networks. Fortunately, `carefree-learn` introduced `repeat_with` API, which can achieve this goal easily with only a few lines of code:
 
 ```python
 # With num_repeat=3 specified, we'll train 3 models on `iris.data`.
@@ -162,10 +162,10 @@ Which yields
 ================================================================================================================================
 ```
 
-It is worth mentioning that `carefree-learn` supports [`Distributed Training`](../user-guides/distributed#distributed-training), which means when we need to perform large scale benchmarking (e.g. train 100 models), we could accelerate the process through multiprocessing:
+It is worth mentioning that `carefree-learn` supports Distributed Training, which means when we need to perform large scale benchmarking (e.g. train 100 models), we could accelerate the process through multiprocessing:
 
 :::info
-In `carefree-learn`, [Distributed Training](../user-guides/distributed#distributed-training) doesn't mean training your model on multiple GPUs or multiple machines. Instead, [Distributed Training](../user-guides/distributed#distributed-training) in `carefree-learn` means training multiple models at the same time.
+In `carefree-learn`, Distributed Training doesn't mean training your model on multiple GPUs or multiple machines. Instead, Distributed Training in `carefree-learn` means training multiple models at the same time.
 :::
 
 ```python
@@ -174,12 +174,12 @@ result = cflearn.repeat_with("iris.data", num_repeat=10, num_jobs=2)
 ```
 
 :::caution
-On iris dataset, however, launching distributed training will actually hurt the speed because iris dataset only contains 150 samples, so the relative overhead brought by distributed training will be too large. Please refer the **CAUTION** section of the [Benchmarking](../user-guides/distributed#benchmarking) section for more details.
+On iris dataset, however, launching distributed training will actually hurt the speed because iris dataset only contains 150 samples, so the relative overhead brought by distributed training will be too large.
 :::
 
 ## Advanced Benchmarking
 
-But this is not enough, because we want to know whether other models (e.g. scikit-learn models) could achieve a better performance than `carefree-learn` models. In this case, we can perform an advanced benchmarking with the [`Experiment`](../user-guides/distributed#experiment) helper class.
+But this is not enough, because we want to know whether other models (e.g. scikit-learn models) could achieve a better performance than `carefree-learn` models. In this case, we can perform an advanced benchmarking with the `Experiment` helper class.
 
 ```python
 experiment = cflearn.Experiment()
@@ -197,7 +197,7 @@ experiment.add_task(model="decision_tree", **common_kwargs)
 experiment.add_task(model="random_forest", **common_kwargs)
 ```
 
-Notice that we specified `run_command="python run_sklearn.py"` for scikit-learn tasks, which means [`Experiment`](../user-guides/distributed#experiment) will try to execute this command in the current working directory for training scikit-learn models. The good news is that we do not need to speciy any command line arguments, because [`Experiment`](../user-guides/distributed#experiment) will handle those for us.
+Notice that we specified `run_command="python run_sklearn.py"` for scikit-learn tasks, which means `Experiment` will try to execute this command in the current working directory for training scikit-learn models. The good news is that we do not need to speciy any command line arguments, because `Experiment` will handle those for us.
 
 Here is basically what a `run_sklearn.py` should look like ([source code](https://github.com/carefree0910/carefree-learn/blob/dev/examples/iris/run_sklearn.py)):
 
@@ -315,7 +315,7 @@ Seems that scikit-learn models are better than `carefree-learn` models! This is 
 
 As mentioned in the [`Introduction`](../), `carefree-learn` is actually a minimal Automatic Machine Learning (AutoML) solution for tabular datasets. Up till now we haven't mentioned any AutoML stuffs yet, so in this section we'll illustrate how to perform AutoML on Iris dataset, as well as how to pack the AutoML results into production.
 
-Since `carefree-learn` has provided the [`cflearn.Auto`](../user-guides/auto-ml) API for out-of-the-box usages, AutoML in `carefree-learn` could be achieved in two lines of code:
+Since `carefree-learn` has provided the `cflearn.Auto` API for out-of-the-box usages, AutoML in `carefree-learn` could be achieved in two lines of code:
 
 ```python
 auto = cflearn.Auto("clf", models="fcnn")

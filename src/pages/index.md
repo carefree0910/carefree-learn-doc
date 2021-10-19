@@ -71,7 +71,7 @@ m = cflearn.api.resnet18_gray(10).fit(data)
 </Tabs>
 
 :::info
-Please refer to [Quick Start](docs/getting-started/quick-start) and [Developer Guides](docs/developer-guides/general) for detailed information.
+Please refer to [Quick Start](docs/getting-started/quick-start) and [Developer Guides](docs/developer-guides/general-customization) for detailed information.
 :::
 
 
@@ -86,7 +86,7 @@ Here are some main advantages that `carefree-learn` holds:
 + Provides a [scikit-learn](https://scikit-learn.org/stable/)-like interface with much more 'carefree' usages, including:
     + Automatically deals with data pre-processing.
     + Automatically handles datasets saved in files (.txt, .csv).
-    + Supports [Distributed Training](docs/user-guides/distributed#distributed-training), which means hyper-parameter tuning can be very efficient in `carefree-learn`.
+    + Supports Distributed Training, which means hyper-parameter tuning can be very efficient in `carefree-learn`.
 + Includes some brand new techniques which may boost vanilla Neural Network (NN) performances on tabular datasets, including:
     + [`TreeDNN` with `Dynamic Soft Pruning`](https://arxiv.org/pdf/1911.05443.pdf), which makes NN less sensitive to hyper-parameters. 
     + [`Deep Distribution Regression (DDR)`](https://arxiv.org/pdf/1911.05441.pdf), which is capable of modeling the entire conditional distribution with one single NN model.

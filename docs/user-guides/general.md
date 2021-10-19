@@ -5,7 +5,7 @@ title: General
 
 :::tip
 + For configurations guide, please refer to the [Configurations](../getting-started/configurations) section.
-+ For development guide, please refer to the [Developer Guides](../developer-guides/general) section.
++ For development guide, please refer to the [Developer Guides](../developer-guides/general-customization) section.
 :::
 
 

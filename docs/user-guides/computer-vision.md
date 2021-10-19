@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 :::tip
 + For general introduction on how to use `carefree-learn`, please refer to the [General](general) section.
-+ For development guide, please refer to the [Developer Guides](../developer-guides/computer-vision) section.
++ For development guide, please refer to the [Developer Guides](../developer-guides/computer-vision-customization) section.
 :::
 
 
