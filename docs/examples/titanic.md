@@ -3,9 +3,9 @@ id: Titanic
 title: Titanic
 ---
 
-| Python source code | Jupyter Notebook |
-|:---:|:---:|
-| [titanic.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.py) | [titanic.ipynb](https://nbviewer.jupyter.org/github/carefree0910/carefree-learn/blob/dev/examples/titanic/titanic.ipynb) |
+| Python source code | Jupyter Notebook | Task |
+|:---:|:---:|:---:|
+| [titanic.py](https://github.com/carefree0910/carefree-learn/blob/dev/examples/ml/titanic/run_titanic.py) | [titanic.ipynb](https://nbviewer.jupyter.org/github/carefree0910/carefree-learn/blob/dev/examples/ml/titanic/titanic.ipynb) | Machine Learning 📈 |
 
 `Titanic` is a famous playground competition hosted by Kaggle ([here](https://www.kaggle.com/c/titanic)), so I'll simply copy-paste its brief description here:
 
@@ -33,13 +33,26 @@ PassengerId,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
 
 What we need to do is to predict the `Survived` column in `test.csv`.
 
+```python
+# preparations
+
+import torch
+import cflearn
+
+import numpy as np
+
+# for reproduction
+np.random.seed(142857)
+torch.manual_seed(142857)
+```
+
 
 ## Configurations
 
 Since the target column is not the last column (which is the default setting of `carefree-learn`), we need to manually configure it:
 
 ```python
-data_config = {"label_name": "Survived"}
+kwargs = dict(carefree=True, cf_data_config={"label_name": "Survived"})
 ```
 
 And you're all set! Notice that only the `label_name` needs to be provided, and `carefree-learn` will find out the corresponding target column for you😉
@@ -47,18 +60,10 @@ And you're all set! Notice that only the `label_name` needs to be provided, and 
 
 ## Build Your Model
 
-For instance, we'll use the famous `Wide & Deep` model:
+For instance, we'll use the famous `Wide & Deep` model. Unlike other libraries, `carefree-learn` supports *file-in*:
 
 ```python
-import cflearn
-
-m = cflearn.make("wnd", data_config=data_config)
-```
-
-Unlike other libraries, `carefree-learn` supports *file-in*:
-
-```python
-m.fit("train.csv")
+m = cflearn.api.fit_ml("train.csv", core_name="wnd", **kwargs)
 ```
 
 
@@ -67,27 +72,29 @@ m.fit("train.csv")
 After building the model, we can directly evaluate our model with a file (*file-out*):
 
 ```python
+# instantiate an `MLInferenceData` instance
+idata = cflearn.MLInferenceData("train.csv")
 # `contains_labels` is set to True because we're evaluating on training set
-cflearn.evaluate("train.csv", pipelines=m, contains_labels=True)
+cflearn.ml.evaluate(idata, metrics=["acc", "auc"], pipelines=m, contains_labels=True)
 ```
 
 Then you will see something like this:
 
 ```text
-~~  [ info ] Results
+>  [ info ] Results
 ================================================================================================================================
 |        metrics         |                       acc                        |                       auc                        |
 --------------------------------------------------------------------------------------------------------------------------------
 |                        |      mean      |      std       |     score      |      mean      |      std       |     score      |
 --------------------------------------------------------------------------------------------------------------------------------
-|          wnd           |    0.860831    |    0.000000    |    0.860831    |    0.915396    |    0.000000    |    0.915396    |
+|          wnd           |    0.857463    |    0.000000    |    0.857463    |    0.892550    |    0.000000    |    0.892550    |
 ================================================================================================================================
 ```
 
-Our model achieved an accuracy of `0.860831`, not bad!
+Our model achieved an accuracy of `0.857463`, not bad!
 
 :::info
-Note that this performance may vary and is not exactly the *training* performance, because `carefree-learn` will automatically split out the cross validation dataset for you. Please refer to [cv_split](../getting-started/configurations#cv_split) for more details.
+Note that this performance may vary and is not exactly the *training* performance, because `carefree-learn` will automatically split out the cross validation dataset for you.
 :::
 
 
@@ -96,9 +103,10 @@ Note that this performance may vary and is not exactly the *training* performanc
 Again, we can directly make predictions with a file (*file-out*):
 
 ```python
+# instantiate an `MLInferenceData` instance
+idata = cflearn.MLInferenceData("test.csv")
 # `contains_labels` is set to False because `test.csv` does not contain labels
-# It is OK to simply call `m.predict("test.csv")` because `contains_labels` is False by default
-predictions = m.predict("test.csv", contains_labels=False)
+predictions = m.predict(idata, make_loader_kwargs={"contains_labels": False})
 ```
 
 
@@ -107,32 +115,20 @@ predictions = m.predict("test.csv", contains_labels=False)
 If you reached here, we have actually already completed this `Titanic` task! All we need to do is to convert the `predictions` into a submission file:
 
 ```python
-def write_submissions(name, predictions_) -> None:
+def write_submissions(name: str, predictions_: np.ndarray) -> None:
     with open("test.csv", "r") as f:
         f.readline()
         id_list = [line.strip().split(",")[0] for line in f]
     with open(name, "w") as f:
         f.write("PassengerId,Survived\n")
-        for test_id, prediction in zip(id_list, predictions_.ravel()):
+        for test_id, prediction in zip(id_list, predictions_):
             f.write(f"{test_id},{prediction}\n")
 
-write_submissions("submissions.csv", predictions)
+predictions = predictions[cflearn.PREDICTIONS_KEY]
+write_submissions("submissions.csv", predictions.argmax(1))
 ```
 
-After running these codes, a `submissions.csv` will be generated and you can submit it to Kaggle directly! In my personal experience, it could achieve from 0.71 to 0.76.
-
-
-## Improve Your Results
-
-Although the whole process is *carefree* enough, the final score is not yet satisfied. One way to improve the result is to try different models:
-
-```python
-m = cflearn.make("tree_linear", data_config=data_config).fit("train.csv")
-predictions = m.predict("test.csv", contains_labels=False)
-write_submissions("submissions_tree_linear.csv", predictions)
-```
-
-After submitting `submissions_tree_linear.csv`, we could achieve ~0.775 (and even up to 0.79) now, cool!
+After running these codes, a `submissions.csv` will be generated and you can submit it to Kaggle directly. In my personal experience, it could achieve 0.77272.
 
 
 ## Conclusions
