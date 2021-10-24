@@ -91,7 +91,7 @@ class ModelProtocol(nn.Module, WithRegister, metaclass=ABCMeta):
 As shown above, there are two special `forward` methods defined in a `Model`, which allows us to customize `onnx` export procedure and `summary` procedure respectively.
 
 :::tip
-See [Customize Models](developer-guides/general-customization#customize-models) section for more details.
+See [Customize Models](/docs/developer-guides/general-customization#customize-models) section for more details.
 :::
 
 
