@@ -8,7 +8,8 @@ module.exports = {
     ],
     "Examples": [
       "examples/Iris",
-      "examples/Titanic"
+      "examples/Titanic",
+      "examples/MNIST"
     ],
     "User Guides": [
       "user-guides/general",
