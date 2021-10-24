@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 :::tip
 + For general introduction on how to use `carefree-learn`, please refer to the [General](general) section.
-+ For development guide, please refer to the [Developer Guides](../developer-guides/computer-vision-customization) section.
++ For development guide, please refer to the [Developer Guides](/docs/developer-guides/computer-vision-customization) section.
 :::
 
 
@@ -99,7 +99,7 @@ The simplest way to construct segmentation tasks as **IFD** is to mimic the imag
 
 ### Design Principles
 
-Since every task may have its own image folder structure, it will be very difficult to design a unified API to cover all the situations. `carefree-learn` therefore designs its [own **IFD** pattern](#ifd-in-carefree-learn), and implements [`prepare_image_folder`](#prepare_image_folder) to convert other image folder structure to this pattern:
+Since every task may have its own image folder structure, it will be very difficult to design a unified API to cover all the situations. `carefree-learn` therefore designs its [own **IFD** pattern](#unified-ifd), and implements [`prepare_image_folder`](#prepare_image_folder) to convert other image folder structure to this pattern:
 
 [ ![ImageFolderData](../../static/img/image-folder-data.png) ](../../static/img/image-folder-data.png)
 
@@ -729,7 +729,7 @@ Data augmentation plays an important role in Computer Vision. In `carefree-learn
 + [albumentations](https://github.com/albumentations-team/albumentations) transforms: [A.py](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/api/cv/data/transforms/A.py).
 + Some commonly used transform pipelines: [interface.py](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/api/cv/data/transforms/interface.py).
 
-These transforms are managed under the [register mechanism](../design-principles#register-mechanism), so we can access them by their names:
+These transforms are managed under the [register mechanism](/docs/design-principles#register-mechanism), so we can access them by their names:
 
 ```python
 import cflearn
@@ -747,5 +747,5 @@ class ToTensor(NoBatchTransforms):
 
 :::tip
 + For supported transforms, please refer to the [source code](https://github.com/carefree0910/carefree-learn/tree/dev/cflearn/api/cv/data/transforms).
-+ For customizing transforms, please refer to the [Customize Transforms](../developer-guides/computer-vision-customization#customize-transforms) section.
++ For customizing transforms, please refer to the [Customize Transforms](/docs/developer-guides/computer-vision-customization#customize-transforms) section.
 :::

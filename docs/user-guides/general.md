@@ -4,8 +4,8 @@ title: General
 ---
 
 :::tip
-+ For configurations guide, please refer to the [Configurations](../getting-started/configurations) section.
-+ For development guide, please refer to the [Developer Guides](../developer-guides/general-customization) section.
++ For configurations guide, please refer to the [Configurations](/docs/getting-started/configurations) section.
++ For development guide, please refer to the [Developer Guides](/docs/developer-guides/general-customization) section.
 :::
 
 
@@ -13,14 +13,14 @@ title: General
 
 In this section, we will introduce how to utilize `carefree-learn` to solve deep learning tasks in general.
 
-Recall that [`Pipeline`](../design-principles#pipeline) serves as the (internal) user interface in `carefree-learn`, so one of the main effort of utilizing `carefree-learn` will be how to construct a suitable [`Pipeline`](../design-principles#pipeline).
+Recall that [`Pipeline`](/docs/design-principles#pipeline) serves as the (internal) user interface in `carefree-learn`, so one of the main effort of utilizing `carefree-learn` will be how to construct a suitable [`Pipeline`](/docs/design-principles#pipeline).
 
 :::info
-+ Please refer to the [Configurations](../getting-started/configurations) section for more details on how to construct a [Pipeline](../design-principles#pipeline).
-+ Please refer to the [Supported Models](../getting-started/configurations#supported-models) section to see currently supported models.
++ Please refer to the [Configurations](/docs/getting-started/configurations) section for more details on how to construct a [Pipeline](/docs/design-principles#pipeline).
++ Please refer to the [Supported Models](/docs/getting-started/configurations#supported-models) section to see currently supported models.
 :::
 
-After a [`Pipeline`](../design-principles#pipeline) is constructed, another effort will be how to define our dataset. Although different tasks require different data format, `carefree-learn` introduced `DLDataModule` to unify the APIs, which means we can always utilize `carefree-learn` in this way more or less:
+After a [`Pipeline`](/docs/design-principles#pipeline) is constructed, another effort will be how to define our dataset. Although different tasks require different data format, `carefree-learn` introduced `DLDataModule` to unify the APIs, which means we can always utilize `carefree-learn` in this way more or less:
 
 ```python
 import cflearn

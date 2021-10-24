@@ -28,7 +28,7 @@ conda uninstall carefree-learn
 pip uninstall carefree-learn
 ```
 
-2. Follow [Installation Guide](../getting-started/installation) to install `carefree-learn`. Remember to choose the `GitHub` tab in the [pip installation](../getting-started/installation#pip-installation) section.
+2. Follow [Installation Guide](/docs/getting-started/installation) to install `carefree-learn`. Remember to choose the `GitHub` tab in the [pip installation](/docs/getting-started/installation#pip-installation) section.
 
 3. Follow [Style Guide](#style-guide) and happy coding!
 

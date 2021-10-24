@@ -75,7 +75,7 @@ def forward(
       
       Other constants could be found [here](https://github.com/carefree0910/carefree-learn/blob/99c946ffa1df2b821161d52aae19f67e91abf46e/cflearn/constants.py).
 + **`state`** [default = `None`]
-    + The [`TrainerState`](../getting-started/configurations#trainerstate) instance.
+    + The [`TrainerState`](/docs/getting-started/configurations#trainerstate) instance.
 + **`kwargs`**
     + Other keyword arguments.
 
@@ -89,7 +89,7 @@ Since the prepared `Trainer` instance will contain the dataset information, this
 
 ### Register & Apply
 
-After defining the `forward` (and probably the `_init_with_trainer`) method, we need to [register](../design-principles#register-mechanism) our model to apply it in `carefree-learn`:
+After defining the `forward` (and probably the `_init_with_trainer`) method, we need to [register](/docs/design-principles#register-mechanism) our model to apply it in `carefree-learn`:
 
 ```python
 @ModelProtocol.register("my_fancy_model")
@@ -109,8 +109,8 @@ class MyFancyModel(ModelProtocol):
 ```
 
 After which we can:
-+ set the `model_name` in [`Pipeline`](../getting-started/configurations#dlsimplepipeline) to the corresponding name to apply it.
-+ set the `model_config` in [`Pipeline`](../getting-started/configurations#dlsimplepipeline) to the corresponding configurations.
++ set the `model_name` in [`Pipeline`](/docs/getting-started/configurations#dlsimplepipeline) to the corresponding name to apply it.
++ set the `model_config` in [`Pipeline`](/docs/getting-started/configurations#dlsimplepipeline) to the corresponding configurations.
 
 ```python
 m = cflearn.cv.CarefreePipeline("my_fancy_model", {"foo": "bar"})

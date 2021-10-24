@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 Although it is possible to get a rather good performance with default configurations, performance might be gained easily by specifying configurations with our prior knowledges.
 
-We've already mentioned the basic ideas on how to configure `carefree-learn` in [`Introduction`](../#configurations), so we will focus on introducing how to actually configure `Pipeline`s in this page. 
+We've already mentioned the basic ideas on how to configure `carefree-learn` in [`Introduction`](/docs/#configurations), so we will focus on introducing how to actually configure `Pipeline`s in this page. 
 
 
 ## Specify Configurations
@@ -461,7 +461,7 @@ m = cflearn.api.resnet18_gray(10, metric_names="acc")
 
 ### `make_multiple` mechanism
 
-> This mechanism is based on the [`Register Mechanism`](../design-principles#register-mechanism).
+> This mechanism is based on the [`Register Mechanism`](/docs/design-principles#register-mechanism).
 
 `make_multiple` mechanism is useful when we need to use either one single instance or multiple instances (e.g. use one metric / use multiple metrics to monitor the training process):
 + When we need one single instance, only one single name (`str`) and the corresponding config is required.

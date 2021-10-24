@@ -228,7 +228,7 @@ Where
 ```
 
 :::tip
-See [ImageFolderData](../user-guides/computer-vision#imagefolderdata) for more details.
+See [ImageFolderData](/docs/user-guides/computer-vision#imagefolderdata) for more details.
 :::
 
 After the data is prepared, we can define a model to fit it, which is fairly easy for `carefree-learn`:
