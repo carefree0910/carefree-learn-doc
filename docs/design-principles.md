@@ -115,3 +115,7 @@ In `carefree-learn`, a `Pipeline` should implement the high-level parts (e.g. `f
 :::note
 Although `carefree-learn` focuses on Deep Learning tasks, the most general abstraction ([`PipelineProtocol`](https://github.com/carefree0910/carefree-learn/blob/2c745bb1e998e74bbbc1c308a5716608ef1b137f/cflearn/pipeline.py#L57)) can actually utilize traditional Machine Learning models, such as `LinearRegression` from `scikit-learn`.
 :::
+
+:::tip
+See [Specify Configurations](/docs/getting-started/configurations#specify-configurations) section for more details.
+:::
