@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[25],{97:function(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Deep Learning \u2764\ufe0f PyTorch","permalink":"/carefree-learn-doc/blog/v0.2.0-release"}]}')}}]);

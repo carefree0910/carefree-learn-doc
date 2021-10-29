@@ -4,7 +4,7 @@
   <ShortName>carefree-learn</ShortName>
   <Description>Search carefree-learn</Description>
   <InputEncoding>UTF-8</InputEncoding>
-  <Image width="16" height="16" type="image/x-icon">https://carefree0910.me/img/favicon.ico</Image>
+  <Image width="16" height="16" type="image/x-icon">https://carefree0910.me/./img/favicon.ico</Image>
   <Url type="text/html" method="get" template="https://carefree0910.me/search?q={searchTerms}"/>
   <Url type="application/opensearchdescription+xml" rel="self" template="https://carefree0910.me/opensearch.xml" />
   <moz:SearchForm>https://carefree0910.me</moz:SearchForm>
