@@ -11,8 +11,8 @@ In general, in order to solve our own tasks with our own models in `carefree-lea
 In this section, we will focus on the general customizations.
 
 :::tip
-+ See [here](computer-vision-customization) for customizations of Computer Vision 🖼️.
-+ See [here](machine-learning-customization) for customizations of Machine Learning 📈.
++ See [here](/docs/developer-guides/computer-vision-customization) for customizations of Computer Vision 🖼️.
++ See [here](/docs/developer-guides/machine-learning-customization) for customizations of Machine Learning 📈.
 :::
 
 
