@@ -7,7 +7,7 @@ module.exports = {
   baseUrl: '/carefree-learn-doc/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
+  favicon: './img/favicon.ico',
   organizationName: 'carefree0910', // Usually your GitHub org/user name.
   projectName: 'carefree-learn-doc', // Usually your repo name.
   stylesheets: [
@@ -37,6 +37,7 @@ module.exports = {
           label: 'Docs',
           position: 'left',
         },
+        {to: 'blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/carefree0910/carefree-learn',
           position: 'right',
@@ -74,6 +75,19 @@ module.exports = {
             },
           ],
         },
+        {
+          title: 'More',
+          items: [
+            {
+              label: 'Blog',
+              to: 'blog',
+            },
+            {
+              label: 'GitHub',
+              href: 'https://github.com/carefree0910/carefree-learn',
+            },
+          ],
+        },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} carefree-learn, carefree0910. Built with Docusaurus.`,
     },
@@ -90,6 +104,12 @@ module.exports = {
           showLastUpdateTime: true,
           remarkPlugins: [math],
           rehypePlugins: [katex],
+        },
+        blog: {
+          showReadingTime: true,
+          // Please change this to your repo.
+          // editUrl:
+          //   'https://github.com/facebook/docusaurus/edit/master/website/blog/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

@@ -108,6 +108,8 @@ There is one more thing we'd like to mention: `carefree-learn` is *[Pandas](http
     + Focuses on the `ImageFolderDataset` for customization, which:
         + Automatically splits the dataset into train & valid.
         + Supports generating labels in parallel, which is very useful when calculating labels is time consuming.
+      
+      See [**IFD** introduction](/docs/user-guides/computer-vision) for more details.
 + `carefree-learn` supports various kinds of `Callback`s, which can be used for saving intermediate visualizations / results.
     + For instance, `carefree-learn` implements an `ArtifactCallback`, which can dump artifacts to disk elaborately during training.
 
